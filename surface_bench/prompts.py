@@ -20,10 +20,11 @@ CONDITION_LABEL = {
     "C3": "code + stale documentation + surf divergence report",
 }
 
-SYSTEM = (
-    "You are an expert software engineer assisting a teammate. Use the materials provided — the "
-    "project documentation and any source code — to answer precisely."
-)
+# Deliberately minimal and persona-free: no "you are an expert…" framing (which primes diligent,
+# skeptical behaviour) and no precedence between docs and code. This mirrors how people actually
+# prompt — paste/tag some files, maybe a doc, ask for the change — and keeps the docs-vs-code
+# question entirely to the model.
+SYSTEM = "Use the files and documentation provided to do the task below."
 
 _FENCE_LANG = {".py": "python", ".ts": "typescript", ".tsx": "tsx", ".js": "javascript"}
 
