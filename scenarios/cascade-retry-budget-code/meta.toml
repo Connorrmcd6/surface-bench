@@ -1,0 +1,17 @@
+id = "cascade-retry-budget-code"
+title = "Cascade: backoff schedule inherits a hidden retry policy's drifted attempt cap"
+lang = "python"
+task_type = "code"
+tier = "T1"  # the cap lives in a dependency the agent cannot see — only its doc
+
+invariant = "A transient operation is attempted at most max_attempts times; schedulers size to that."
+
+# The drift: the retry policy's attempt cap baked into should_retry changed 3 -> 5. The agent edits
+# schedule.py (visible) whose backoff_schedule must emit one delay per retry the policy will make —
+# but the policy's source (policy.py) is HIDDEN, so the cap is knowable only from its doc. A stale
+# doc ("3 total attempts") yields too few backoff entries.
+drift = "retry cap 3 -> 5 inside should_retry; the visible scheduler sizes from the doc, not the hidden code"
+
+anchor = "code/retry/policy.py > RetryPolicy > should_retry"
+
+hidden_paths = ["code/retry/*.py"]

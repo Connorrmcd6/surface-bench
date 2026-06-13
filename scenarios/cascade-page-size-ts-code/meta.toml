@@ -1,0 +1,16 @@
+id = "cascade-page-size-ts-code"
+title = "Cascade: page-link builder inherits a hidden module's drifted default page size (TypeScript)"
+lang = "typescript"
+task_type = "code"
+tier = "T1"  # the page size lives in a dependency the agent cannot see — only its doc
+
+# The drift: defaultPageSize() changed 50 -> 25. The agent edits links.ts (visible) whose
+# buildPageLinks must emit one link per page at the default page size — but pagination.ts (where
+# defaultPageSize lives) is HIDDEN, so the size is knowable only from its doc. A stale doc (50)
+# yields too few page links. Polyglot scenario: graded by `node --test` (Node >= 22.18 type-strip).
+invariant = "List UIs paginate at defaultPageSize(); link builders must use the same size."
+drift = "defaultPageSize() 50 -> 25; the visible link builder sizes from the doc, not the hidden code"
+
+anchor = "code/pagination.ts > defaultPageSize"
+
+hidden_paths = ["code/pagination.ts"]

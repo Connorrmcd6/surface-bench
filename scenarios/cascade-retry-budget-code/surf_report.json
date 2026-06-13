@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "divergences": [
+    {
+      "hub": "hub.md",
+      "claim": "RetryPolicy.should_retry caps transient operations at 3 total attempts. It returns False for a FatalError; otherwise it keeps retrying only while the 1-based attempt_number is below 3, so a persistently-failing operation is tried at most 3 times (the initial attempt plus 2 retries) before the policy gives up.",
+      "at": "code/retry/policy.py > RetryPolicy > should_retry",
+      "kind": "changed",
+      "old_hash": "3cff6bd1cf49",
+      "new_hash": "42f5648604b3",
+      "new_code": "def should_retry(self, attempt_number: int, error: Exception) -> bool:\n        \"\"\"Return True if another attempt should be made.\n\n        `attempt_number` is the 1-based count of attempts already completed. A fatal error is never\n        retried; otherwise we keep going until the attempt cap is reached.\n        \"\"\"\n        if isinstance(error, FatalError):\n            return False\n        return attempt_number < 5",
+      "prose": "RetryPolicy.should_retry caps transient operations at 3 total attempts. It returns False for a FatalError; otherwise it keeps retrying only while the 1-based attempt_number is below 3, so a persistently-failing operation is tried at most 3 times (the initial attempt plus 2 retries) before the policy gives up."
+    }
+  ]
+}

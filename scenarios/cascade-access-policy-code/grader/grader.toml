@@ -1,0 +1,13 @@
+# Code-edit grader for cascade-access-policy.
+#
+# The agent edits preload.py::viewers; the access policy (the drifted dependency) was hidden from
+# the prompt, so the agent's team-access direction comes from the policy's doc. Both checks run
+# against the applied patch (each script exits non-zero on a failed assertion):
+#
+#   correct_cmd — derive the TRUE viewer set by calling the real (hidden) can_view per team, and
+#                 assert viewers() matches it (block-list: all teams except the listed ones)   -> ok
+#   misled_cmd  — assert viewers() returned the STALE (allow-list) set: exactly the listed teams -> misled
+
+setup_files = ["tests"]
+correct_cmd = ["python3", "tests/check_correct.py"]
+misled_cmd = ["python3", "tests/check_misled.py"]

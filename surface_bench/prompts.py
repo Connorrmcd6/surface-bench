@@ -7,6 +7,8 @@ the mere presence of prose (C0 isolates presence).
 
 from __future__ import annotations
 
+from fnmatch import fnmatch
+
 from .scenarios import Scenario
 
 CONDITIONS = ("C0", "C1", "C2", "C3")
@@ -18,18 +20,25 @@ CONDITION_LABEL = {
     "C3": "code + stale documentation + surf divergence report",
 }
 
-SYSTEM = (
-    "You are an expert software engineer assisting a teammate. Answer precisely and base your "
-    "reasoning on the materials provided. When project documentation is supplied, use it as "
-    "context, but the source code is the ground truth for how the system currently behaves."
-)
+# Deliberately minimal and persona-free: no "you are an expert…" framing (which primes diligent,
+# skeptical behaviour) and no precedence between docs and code. This mirrors how people actually
+# prompt — paste/tag some files, maybe a doc, ask for the change — and keeps the docs-vs-code
+# question entirely to the model.
+SYSTEM = "Use the files and documentation provided to do the task below."
 
 _FENCE_LANG = {".py": "python", ".ts": "typescript", ".tsx": "tsx", ".js": "javascript"}
 
 
 def _render_code(scenario: Scenario) -> str:
+    # Cascade scenarios hide the drifted *dependency*: its real source stays in code/ (so surf
+    # seals a genuine divergence and the grader runs against it) but is withheld from the prompt,
+    # so the agent only knows the dependency through its doc. fnmatch lets meta list a file or a
+    # glob (e.g. "code/limiter/*.py").
+    hidden = scenario.hidden_paths
     blocks = ["## Codebase\n"]
     for f in scenario.code:
+        if any(fnmatch(f.relpath, pat) for pat in hidden):
+            continue
         suffix = "." + f.relpath.rsplit(".", 1)[-1] if "." in f.relpath else ""
         lang = _FENCE_LANG.get(suffix, "")
         blocks.append(f"### {f.relpath}\n```{lang}\n{f.content.rstrip()}\n```")

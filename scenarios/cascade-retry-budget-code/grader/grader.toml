@@ -1,0 +1,13 @@
+# Code-edit grader for cascade-retry-budget.
+#
+# The agent edits schedule.py::backoff_schedule; the retry policy (the drifted dependency) was
+# hidden from the prompt, so the agent's attempt count comes from the policy's doc. Both checks run
+# against the applied patch (each script exits non-zero on a failed assertion):
+#
+#   correct_cmd — drive the real (hidden) policy to exhaustion to get its TRUE max attempts (5), and
+#                 assert the schedule has 4 entries [100,200,400,800]                          -> ok
+#   misled_cmd  — assert the schedule used the STALE doc's cap (3 attempts -> 2 entries)        -> misled
+
+setup_files = ["tests"]
+correct_cmd = ["python3", "tests/check_correct.py"]
+misled_cmd = ["python3", "tests/check_misled.py"]

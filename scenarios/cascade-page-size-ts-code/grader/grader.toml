@@ -1,0 +1,13 @@
+# Code-edit grader for cascade-page-size-ts (polyglot: Node's built-in test runner).
+#
+# The agent edits links.ts::buildPageLinks; pagination.ts (the drifted dependency) was hidden from
+# the prompt, so the agent's page size comes from its doc. Node strips the TS types at load time
+# (>=22.18), so no install/tsc step is needed; `node --test` exits non-zero on a failed assertion.
+#
+#   correct_cmd — import the real (hidden) defaultPageSize() (25) and assert buildPageLinks sizes to
+#                 it: 100 items -> [1,2,3,4]                                                    -> ok
+#   misled_cmd  — assert it used the STALE size (50): 100 items -> [1,2]                         -> misled
+
+setup_files = ["tests"]
+correct_cmd = ["node", "--test", "tests/correct.test.ts"]
+misled_cmd = ["node", "--test", "tests/misled.test.ts"]

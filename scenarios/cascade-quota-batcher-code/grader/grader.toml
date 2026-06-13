@@ -1,0 +1,13 @@
+# Code-edit grader for cascade-quota-batcher.
+#
+# The agent edits throttle.py::plan_batches; the limiter (the drifted dependency) was hidden from
+# the prompt, so the agent's per-window capacity comes entirely from the limiter's doc. Both checks
+# run against the applied patch (each script exits non-zero on a failed assertion):
+#
+#   correct_cmd — derive the limiter's TRUE capacity by probing the real (hidden) limiter, and
+#                 assert plan_batches sizes to it (11 for WINDOW_LIMIT=10, the inclusive bound)  -> ok
+#   misled_cmd  — assert plan_batches sized to the STALE doc's capacity (WINDOW_LIMIT == 10)      -> misled
+
+setup_files = ["tests"]
+correct_cmd = ["python3", "tests/check_correct.py"]
+misled_cmd = ["python3", "tests/check_misled.py"]

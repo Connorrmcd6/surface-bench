@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "divergences": [
+    {
+      "hub": "hub.md",
+      "claim": "Private documents are allow-listed by team. AccessPolicy.can_view grants a non-owner, non-admin user access to a private document only if their team is explicitly present in the document's team list. The default for any team that is not listed is DENY, so the set of teams that may view the document is exactly the listed teams.",
+      "at": "code/access.py > AccessPolicy > can_view",
+      "kind": "changed",
+      "old_hash": "aaae0f48e127",
+      "new_hash": "0412df1065c3",
+      "new_code": "def can_view(self, user: User, doc: Document) -> bool:\n        \"\"\"Return True if `user` is permitted to view `doc`.\"\"\"\n        if doc.visibility == \"public\":\n            return True\n        if user.is_admin:\n            return True\n        if doc.owner_id == user.id:\n            return True\n        # Team-scoped access for private documents.\n        return user.team not in doc.restricted_teams",
+      "prose": "Private documents are allow-listed by team. AccessPolicy.can_view grants a non-owner, non-admin user access to a private document only if their team is explicitly present in the document's team list. The default for any team that is not listed is DENY, so the set of teams that may view the document is exactly the listed teams."
+    }
+  ]
+}

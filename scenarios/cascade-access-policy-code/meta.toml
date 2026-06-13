@@ -1,0 +1,17 @@
+id = "cascade-access-policy-code"
+title = "Cascade: viewer precompute inherits a hidden policy's allow/deny inversion"
+lang = "python"
+task_type = "code"
+tier = "T1"  # the policy direction lives in a dependency the agent cannot see — only its doc
+
+invariant = "Private-doc team access is governed by one policy; precomputed viewer sets must match it."
+
+# The drift: AccessPolicy.can_view flipped from an allow-list (team in permitted_teams, default
+# DENY) to a block-list (team not in restricted_teams, default ALLOW). The agent edits preload.py
+# (visible) whose viewers() must return exactly the teams can_view admits — but can_view's source
+# is HIDDEN, so its direction is knowable only from the doc. A stale (allow-list) doc inverts the set.
+drift = "team check allow-list -> block-list; the visible precompute encodes the direction from the doc"
+
+anchor = "code/access.py > AccessPolicy > can_view"
+
+hidden_paths = ["code/access.py", "code/models.py"]
