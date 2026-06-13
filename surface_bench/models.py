@@ -64,7 +64,9 @@ class AnthropicModel:
         self.model_id = model_id
         self.temperature = temperature
         self.max_tokens = max_tokens
-        self._client = anthropic.Anthropic()
+        # Per-request timeout + retries so a single hung request can't stall the whole matrix
+        # (the SDK default has no wall-clock cap short enough for a long unattended run).
+        self._client = anthropic.Anthropic(timeout=120.0, max_retries=4)
 
     def complete(self, system: str, user: str) -> Completion:
         resp = self._client.messages.create(
