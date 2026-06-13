@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "divergences": [
+    {
+      "hub": "hub.md",
+      "claim": "Rotation is single-use and self-defending: rotate_refresh_token enforces single use before issuing \u2014 it marks the presented token used, and if a token that was already rotated is presented again it treats this as theft, revokes the whole token family (global logout), and raises TokenReuseError. This is what protects the system against replay of a stolen refresh token: once the legitimate client rotates, the stolen copy is dead, and any reuse trips detection.",
+      "at": "code/auth/refresh.py > RefreshService > rotate_refresh_token",
+      "kind": "changed",
+      "old_hash": "2f309e0d0c84",
+      "new_hash": "2dc2de2c34a6",
+      "new_code": "def rotate_refresh_token(self, old_token: str) -> str:\n        \"\"\"Exchange a refresh token for a freshly issued one and return it.\"\"\"\n        record = self.store.get(old_token)\n        if record is None or record.revoked:\n            raise InvalidToken(\"unknown or revoked refresh token\")\n        new_token = self.store.issue(record.user_id, record.family_id)\n        return new_token",
+      "prose": "Rotation is single-use and self-defending: rotate_refresh_token enforces single use before issuing \u2014 it marks the presented token used, and if a token that was already rotated is presented again it treats this as theft, revokes the whole token family (global logout), and raises TokenReuseError. This is what protects the system against replay of a stolen refresh token: once the legitimate client rotates, the stolen copy is dead, and any reuse trips detection."
+    }
+  ]
+}

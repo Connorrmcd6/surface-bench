@@ -1,0 +1,16 @@
+id = "refresh-single-use-qa"
+title = "Refresh rotation: single-use invariant dropped"
+lang = "python"
+task_type = "qa"
+tier = "T0"  # local: the contradiction is visible in the one anchored function
+
+# The architectural invariant the hub documents.
+invariant = "A refresh token may be rotated at most once; reuse triggers a global logout."
+
+# The drift: the single-use guard (mark_used / is_used / revoke_family) was removed from
+# rotate_refresh_token, so rotation is now repeatable and reuse is silent. This is exactly the
+# kind of logic change surf check fires on (statements added/removed inside the anchored span).
+drift = "single-use guard removed -> rotation is repeatable, no family revocation"
+
+# The anchor both hubs point at (relative to the scenario's code/ tree as the workspace root).
+anchor = "code/auth/refresh.py > RefreshService > rotate_refresh_token"

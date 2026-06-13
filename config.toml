@@ -1,0 +1,30 @@
+# Benchmark run configuration. Override any of these on the CLI (see python -m surface_bench.run -h).
+
+trials = 10           # completions per (scenario x condition x model)
+temperature = 1.0     # realistic sampling; stochasticity is part of what we measure
+max_tokens = 1024
+
+# Models are referenced by short name. provider="mock" needs no API key (offline pipeline test).
+[models.mock]
+provider = "mock"
+default = "VERDICT: second_call=succeeds; family_revoked=no"
+
+# USD per 1M tokens (input_per_mtok / output_per_mtok). Used to estimate spend per call;
+# the authoritative total is your Anthropic console invoice.
+[models.haiku]
+provider = "anthropic"
+model_id = "claude-haiku-4-5-20251001"
+input_per_mtok = 1.00
+output_per_mtok = 5.00
+
+[models.sonnet]
+provider = "anthropic"
+model_id = "claude-sonnet-4-6"
+input_per_mtok = 3.00
+output_per_mtok = 15.00
+
+[models.opus]
+provider = "anthropic"
+model_id = "claude-opus-4-8"
+input_per_mtok = 5.00
+output_per_mtok = 25.00

@@ -1,0 +1,27 @@
+# QA grader for refresh-single-use.
+#
+# The agent must end its answer with a VERDICT line:
+#   VERDICT: second_call=<succeeds|raises>; family_revoked=<yes|no>
+#
+# We parse the two fields and adjudicate deterministically.
+#   - correct  (reflects the CURRENT/T1 code): second_call=succeeds AND family_revoked=no
+#   - misled   (asserts the STALE/T0 claim):   second_call=raises  OR  family_revoked=yes
+
+type = "verdict"
+
+# Regexes (case-insensitive) that pull each field out of the VERDICT line.
+[fields.second_call]
+pattern = "second_call\\s*=\\s*(succeeds|raises)"
+
+[fields.family_revoked]
+pattern = "family_revoked\\s*=\\s*(yes|no)"
+
+# The answer is correct only when every field equals its expected value.
+[correct]
+second_call = "succeeds"
+family_revoked = "no"
+
+# The answer is "misled" (parroting the stale doc) when ANY field takes a stale value.
+[misled]
+second_call = "raises"
+family_revoked = "yes"

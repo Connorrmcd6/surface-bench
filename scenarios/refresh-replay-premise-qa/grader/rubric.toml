@@ -1,0 +1,24 @@
+# QA grader for refresh-replay-premise (Tier 2).
+#
+# The documented invariant ("rotation is single-use, so replay is mitigated") is the PREMISE of
+# the reviewer's conclusion. The current code dropped the _enforce_single_use call, so the premise
+# is false and the conclusion is wrong. We grade the downstream conclusion, not a restatement.
+#
+#   - correct (current/T1 code): reviewer is wrong AND replay is NOT protected
+#   - misled  (stale/T0 claim):  reviewer is right OR replay is protected (parroted the premise)
+
+type = "verdict"
+
+[fields.reviewer_correct]
+pattern = "reviewer_correct\\s*=\\s*(yes|no)"
+
+[fields.replay_protected]
+pattern = "replay_protected\\s*=\\s*(yes|no)"
+
+[correct]
+reviewer_correct = "no"
+replay_protected = "no"
+
+[misled]
+reviewer_correct = "yes"
+replay_protected = "yes"

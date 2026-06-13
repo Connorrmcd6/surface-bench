@@ -1,0 +1,6 @@
+# Raw run outputs are large and reproducible; commit only curated snapshots by force-adding.
+results/
+.author/.work/
+__pycache__/
+*.pyc
+.venv/

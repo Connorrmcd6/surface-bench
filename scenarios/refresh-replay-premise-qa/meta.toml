@@ -1,0 +1,15 @@
+id = "refresh-replay-premise-qa"
+title = "Refresh replay: stale security premise drives a wrong conclusion"
+lang = "python"
+task_type = "qa"
+tier = "T2"  # premise: the documented invariant is load-bearing for a security conclusion
+
+invariant = "Single-use rotation mitigates refresh-token replay (stolen tokens die on next rotate)."
+
+# The drift: rotate_refresh_token no longer calls _enforce_single_use (the guard method still
+# exists as dead code), so rotation is repeatable and replay is no longer mitigated. The task asks
+# the agent to judge a pentester's conclusion that rests on the documented (now false) invariant —
+# so a stale doc propagates into a wrong security verdict even though each local read is correct.
+drift = "rotate stops calling _enforce_single_use -> replay no longer mitigated; guard is dead code"
+
+anchor = "code/auth/refresh.py > RefreshService > rotate_refresh_token"

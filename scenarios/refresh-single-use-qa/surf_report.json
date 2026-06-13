@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "divergences": [
+    {
+      "hub": "hub.md",
+      "claim": "Refresh rotation is single-use. Each refresh token may be exchanged at most once; rotating it marks the old token as used. Presenting an already-rotated token is treated as token theft: the entire token family is revoked (a global logout) and the call raises TokenReuseError.",
+      "at": "code/auth/refresh.py > RefreshService > rotate_refresh_token",
+      "kind": "changed",
+      "old_hash": "b67502711f98",
+      "new_hash": "2dc2de2c34a6",
+      "new_code": "def rotate_refresh_token(self, old_token: str) -> str:\n        \"\"\"Exchange a refresh token for a freshly issued one and return it.\"\"\"\n        record = self.store.get(old_token)\n        if record is None or record.revoked:\n            raise InvalidToken(\"unknown or revoked refresh token\")\n        new_token = self.store.issue(record.user_id, record.family_id)\n        return new_token",
+      "prose": "Refresh rotation is single-use. Each refresh token may be exchanged at most once; rotating it marks the old token as used. Presenting an already-rotated token is treated as token theft: the entire token family is revoked (a global logout) and the call raises TokenReuseError."
+    }
+  ]
+}
