@@ -38,5 +38,7 @@ on every model — **a more capable model is *not* more robust to rot** when it 
 stale doc still costs **+57 to +107 extra output tokens** vs a fresh one on every model — the
 wasted-token tax of rot you *can* see.
 
-Files: `raw.jsonl` (all 1320 rows) · `summary.json` (rates, CIs, deltas) · `report.md` (rendered) ·
-`success_{haiku,sonnet,opus}.png` · `run.json` (original run metadata).
+Files: `raw.jsonl` (all 1320 rows) · `summary.json` (machine-readable rates, CIs, deltas) ·
+`report.md` (full authored write-up: overview, hypotheses, methodology, prompts, results,
+interpretation, learnings, future work) · `success_{haiku,sonnet,opus}.png` · `run.json` (original
+run metadata).
