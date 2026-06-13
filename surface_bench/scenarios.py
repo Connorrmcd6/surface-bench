@@ -32,6 +32,9 @@ class Scenario:
     hub_fresh: str
     surf_report: str  # raw JSON text of the genuine `surf check` divergence
     code: list[CodeFile] = field(default_factory=list)
+    # code/ paths (or globs) present for grading but withheld from the prompt — the hidden
+    # dependency in a cascade scenario, which the agent knows only through its doc.
+    hidden_paths: list[str] = field(default_factory=list)
 
     @property
     def grader_dir(self) -> Path:
@@ -74,6 +77,7 @@ def load_scenario(path: str | Path) -> Scenario:
         hub_fresh=(root / "hub_fresh.md").read_text(),
         surf_report=(root / "surf_report.json").read_text(),
         code=_read_code(root / "code"),
+        hidden_paths=meta.get("hidden_paths", []),
     )
 
 

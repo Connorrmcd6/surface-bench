@@ -86,3 +86,25 @@ uv does not manage Node; install it separately.
 
 Keep the correct answer **non-obvious from a quick code read**, or the documentation carries no
 weight and the bench measures nothing.
+
+### Two scenario families
+
+- **Comprehension** (e.g. `refresh-single-use-qa`): the drifted code *and* its contradicting doc
+  are both in the prompt. Measures whether an agent re-derives truth from code it can see.
+- **Cascade** (e.g. `cascade-quota-batcher-code`): the realistic context-rot shape. The agent edits
+  a visible function whose correctness depends on a **hidden dependency** — the drifted code is
+  listed in `meta.toml`'s `hidden_paths` so it stays in `code/` (for `surf` to seal a real
+  divergence and for the grader to run against it) but is withheld from the prompt. The agent knows
+  the dependency only through its doc, so a stale doc propagates into a wrong cascaded edit; in C3
+  the `surf` report's `new_code` is the only window onto the truth. The grader derives the expected
+  value from the real hidden dependency, so the test stays honest:
+
+  ```toml
+  # meta.toml
+  hidden_paths = ["code/limiter/*.py"]   # present for grading, hidden from the prompt
+  ```
+
+  Author cascades so the contract is **only** knowable from the doc (the dependency's code is
+  hidden), and avoid leaking the stale value through the visible file's wording or worked examples
+  — and through the task text: phrase it neutrally, never "work from the documentation", or you
+  re-introduce the doc-trust bias the neutral system prompt removes.

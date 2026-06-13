@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "divergences": [
+    {
+      "hub": "hub.md",
+      "claim": "defaultPageSize() returns 50. List views paginate in fixed pages of 50 items unless an explicit size is passed, so a result set of N items spans ceil(N / 50) pages and page links run from 1 to ceil(N / 50).",
+      "at": "code/pagination.ts > defaultPageSize",
+      "kind": "changed",
+      "old_hash": "e0989902904f",
+      "new_hash": "6ae99eb629e4",
+      "new_code": "function defaultPageSize(): number {\n  return 25;\n}",
+      "prose": "defaultPageSize() returns 50. List views paginate in fixed pages of 50 items unless an explicit size is passed, so a result set of N items spans ceil(N / 50) pages and page links run from 1 to ceil(N / 50)."
+    }
+  ]
+}

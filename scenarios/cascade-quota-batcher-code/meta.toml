@@ -1,0 +1,19 @@
+id = "cascade-quota-batcher-code"
+title = "Cascade: batcher inherits a hidden limiter's drifted per-window capacity"
+lang = "python"
+task_type = "code"
+tier = "T1"  # the truth lives in a dependency the agent cannot see — only its doc
+
+invariant = "A fixed-window limiter admits a fixed number of requests per window; batchers must size to it."
+
+# The drift: the limiter's admission guard changed `<` -> `<=`, so it now admits limit+1 per window,
+# not limit. The agent is asked to edit throttle.py (visible) whose plan_batches must size to that
+# capacity — but the limiter's source (window.py) is HIDDEN, so the only source of the capacity rule
+# is the limiter's doc. A stale doc ("exactly limit per window") makes the batcher off-by-one.
+drift = "limiter admission `<` -> `<=` (limit+1/window); batcher sizes from the doc, not the hidden code"
+
+anchor = "code/limiter/window.py > FixedWindowLimiter > allow"
+
+# The drifted dependency: present in code/ so surf seals a real divergence and the grader runs the
+# batcher against the real limiter, but withheld from the prompt — the agent knows it only by doc.
+hidden_paths = ["code/limiter/*.py"]
