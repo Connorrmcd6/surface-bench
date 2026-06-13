@@ -1,0 +1,14 @@
+id = "dropped-await-qa"
+title = "Async billing: dropped await turns a durable write into fire-and-forget"
+lang = "python"
+task_type = "qa"
+tier = "T1"  # buried: a single missing `await` changes the post-condition
+
+invariant = "When charge_customer returns, the charge has been durably committed to the ledger."
+
+# The drift: the `await` in front of self.ledger.commit(entry) was removed, so commit() now returns
+# an un-awaited coroutine that is never scheduled — the ledger write is dropped. Exactly the kind of
+# effect-changing edit surf check fires on (a statement inside the anchored span changed).
+drift = "`await self.ledger.commit(entry)` -> `self.ledger.commit(entry)`; the write never runs"
+
+anchor = "code/billing/charges.py > ChargeService > charge_customer"

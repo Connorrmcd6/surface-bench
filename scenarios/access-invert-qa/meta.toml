@@ -1,0 +1,15 @@
+id = "access-invert-qa"
+title = "Access control: allow-list inverted into a block-list"
+lang = "python"
+task_type = "qa"
+tier = "T1"  # buried: one membership test, but the allow/deny default is inverted
+
+invariant = "Private documents are allow-listed: a non-owner, non-admin sees one only if their team is explicitly granted."
+
+# The drift: can_view's team check flipped from an allow-list (team in permitted_teams, default
+# DENY) to a block-list (team not in restricted_teams, default ALLOW). The membership test and its
+# default outcome are inverted — exactly the allow/deny swap surf check fires on (the comparison in
+# the anchored span changed).
+drift = "team check `in permitted_teams` (default deny) -> `not in restricted_teams` (default allow)"
+
+anchor = "code/access.py > AccessPolicy > can_view"

@@ -15,6 +15,7 @@ from __future__ import annotations
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import tomllib
 from pathlib import Path
@@ -32,6 +33,11 @@ def parse_files(output: str) -> dict[str, str]:
 
 
 def _run(cmd: list[str], cwd: Path) -> bool:
+    # Run a "python"/"python3" grader command under the *same* interpreter as the harness, so the
+    # check inherits whatever env launched the run (uv, venv, system) rather than gambling on which
+    # `python3` happens to be on PATH. Other commands (e.g. `node`) are resolved from PATH as-is.
+    if cmd and cmd[0] in ("python", "python3"):
+        cmd = [sys.executable, *cmd[1:]]
     proc = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=120)
     return proc.returncode == 0
 

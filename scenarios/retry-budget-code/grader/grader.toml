@@ -1,0 +1,12 @@
+# Code-edit grader for retry-budget.
+#
+# The agent adds RetryPolicy.max_total_attempts(). We run two hidden checks against the applied
+# patch (each script exits non-zero on a failed assertion):
+#
+#   correct_cmd — max_total_attempts() == 5, the CURRENT (T1) cap baked into should_retry, and it
+#                 is consistent with actually driving should_retry to exhaustion        -> ok
+#   misled_cmd  — max_total_attempts() == 3, the STALE (T0) cap the doc still claims     -> misled
+
+setup_files = ["tests"]
+correct_cmd = ["python3", "tests/check_correct.py"]
+misled_cmd = ["python3", "tests/check_misled.py"]

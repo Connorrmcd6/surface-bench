@@ -1,0 +1,14 @@
+id = "retry-budget-code"
+title = "Retry policy: attempt budget constant changed"
+lang = "python"
+task_type = "code"
+tier = "T0"  # local: the constant is right there in should_retry, but the doc says otherwise
+
+invariant = "A transient operation is attempted at most `max_attempts` times before giving up."
+
+# The drift: the attempt cap baked into should_retry changed from 3 to 5, so the policy now keeps
+# retrying further than the docs claim. Exactly the kind of changed-constant drift surf check fires
+# on (a literal inside the anchored span changed).
+drift = "attempt cap 3 -> 5 inside should_retry; the doc still says 3"
+
+anchor = "code/retry/policy.py > RetryPolicy > should_retry"

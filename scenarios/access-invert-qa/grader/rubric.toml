@@ -1,0 +1,25 @@
+# QA grader for access-invert.
+#
+# The agent ends its answer with:
+#   VERDICT: can_view=<yes|no>; team_rule=<allowlist|blocklist>
+#
+#   - correct (current/T1 code): can_view=yes AND team_rule=blocklist
+#       (growth is not in restricted_teams, so the block-list default ALLOWS Dana)
+#   - misled  (stale/T0 claim):  can_view=no  OR  team_rule=allowlist
+#       (parroting the doc's allow-list, default-deny model)
+
+type = "verdict"
+
+[fields.can_view]
+pattern = "can_view\\s*=\\s*(yes|no)"
+
+[fields.team_rule]
+pattern = "team_rule\\s*=\\s*(allowlist|blocklist)"
+
+[correct]
+can_view = "yes"
+team_rule = "blocklist"
+
+[misled]
+can_view = "no"
+team_rule = "allowlist"

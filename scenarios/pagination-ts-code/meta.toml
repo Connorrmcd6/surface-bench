@@ -1,0 +1,15 @@
+id = "pagination-ts-code"
+title = "Pagination: default page size constant changed (TypeScript)"
+lang = "typescript"
+task_type = "code"
+tier = "T0"  # local: the constant is one line, but the doc still quotes the old value
+
+invariant = "List endpoints page results in fixed-size pages of defaultPageSize() items."
+
+# The drift: the value returned by defaultPageSize() changed from 50 to 25, so any computation that
+# depends on the page size (page counts, offsets) shifts. A changed-constant drift surf check fires
+# on (the literal inside the anchored function changed). This is the polyglot scenario: graded by
+# `node --test` against the agent's edited .ts via Node's built-in type stripping (no install step).
+drift = "defaultPageSize() 50 -> 25; the doc still says 50"
+
+anchor = "code/pagination.ts > defaultPageSize"
