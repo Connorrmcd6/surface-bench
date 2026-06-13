@@ -124,7 +124,7 @@ ask for the change.
 
 ### 4.2 User-turn structure
 
-```
+````
 ## Codebase
 ### <path>
 ```<lang>
@@ -145,7 +145,7 @@ matches the code it points at ...
 
 ## Task
 <the task: QA question ending in a VERDICT line, or a code-edit asking for full FILE: blocks>
-```
+````
 
 ### 4.3 Worked example — `cascade-quota-batcher-code`
 
