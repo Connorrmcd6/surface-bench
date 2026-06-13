@@ -1,0 +1,15 @@
+id = "ratelimit-window-code"
+title = "Rate limiter: window boundary flipped from exclusive to inclusive"
+lang = "python"
+task_type = "code"
+tier = "T1"  # buried: the boundary lives in one comparison the agent must read carefully
+
+# The architectural invariant the hub documents.
+invariant = "A fixed-window limiter admits at most `limit` requests per key per window."
+
+# The drift: the admission comparison in allow() changed from `count < self.limit` to
+# `count <= self.limit`, so a window now admits `limit + 1` requests, not `limit`. A classic
+# off-by-one that surf check fires on (operator flipped inside the anchored span).
+drift = "admission guard `<` -> `<=` -> window now admits limit+1, not limit"
+
+anchor = "code/limiter/window.py > FixedWindowLimiter > allow"

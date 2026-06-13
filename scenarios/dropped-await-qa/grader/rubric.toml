@@ -1,0 +1,25 @@
+# QA grader for dropped-await.
+#
+# The agent ends its answer with:
+#   VERDICT: persisted=<yes|no>; commit_awaited=<yes|no>
+#
+#   - correct (current/T1 code): persisted=no AND commit_awaited=no
+#       (the await was dropped, so the commit coroutine never runs)
+#   - misled  (stale/T0 claim):  persisted=yes OR commit_awaited=yes
+#       (parroting the doc's "awaited, durably recorded" guarantee)
+
+type = "verdict"
+
+[fields.persisted]
+pattern = "persisted\\s*=\\s*(yes|no)"
+
+[fields.commit_awaited]
+pattern = "commit_awaited\\s*=\\s*(yes|no)"
+
+[correct]
+persisted = "no"
+commit_awaited = "no"
+
+[misled]
+persisted = "yes"
+commit_awaited = "yes"

@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "divergences": [
+    {
+      "hub": "hub.md",
+      "claim": "FixedWindowLimiter.allow admits at most `limit` requests per key per window. The admission test is exclusive (count < limit): once a key has been admitted `limit` times in the current window, every further allow() returns False until the window rolls over. So a limiter built with limit=N lets exactly N requests through per window and rejects the N+1th.",
+      "at": "code/limiter/window.py > FixedWindowLimiter > allow",
+      "kind": "changed",
+      "old_hash": "c9e7b0117b79",
+      "new_hash": "1e1e5d5ac8b3",
+      "new_code": "def allow(self, key: str) -> bool:\n        \"\"\"Record an attempt for `key`; return True if it is admitted, False if throttled.\"\"\"\n        now = self.clock.now()\n        start, count = self._buckets.get(key, (now, 0))\n        if now - start >= self.window_seconds:\n            start, count = now, 0\n        if count <= self.limit:\n            self._buckets[key] = [start, count + 1]\n            return True\n        self._buckets[key] = [start, count]\n        return False",
+      "prose": "FixedWindowLimiter.allow admits at most `limit` requests per key per window. The admission test is exclusive (count < limit): once a key has been admitted `limit` times in the current window, every further allow() returns False until the window rolls over. So a limiter built with limit=N lets exactly N requests through per window and rejects the N+1th."
+    }
+  ]
+}

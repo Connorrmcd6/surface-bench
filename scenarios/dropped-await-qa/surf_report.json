@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "divergences": [
+    {
+      "hub": "hub.md",
+      "claim": "charge_customer awaits the ledger write before returning: after charging the gateway it calls `await self.ledger.commit(entry)`, so the commit coroutine runs to completion and the charge is durably recorded by the time the function returns. Callers can rely on the post-condition that once `await charge_customer(...)` returns, ledger.contains(receipt.id) is True.",
+      "at": "code/billing/charges.py > ChargeService > charge_customer",
+      "kind": "changed",
+      "old_hash": "2106a5d444cd",
+      "new_hash": "ee09e978967d",
+      "new_code": "async def charge_customer(self, customer_id: str, amount_cents: int) -> Receipt:\n        \"\"\"Charge the customer, record the charge in the ledger, and return the receipt.\"\"\"\n        receipt = await self.gateway.charge(customer_id, amount_cents)\n        entry = LedgerEntry(\n            customer_id=customer_id,\n            amount_cents=amount_cents,\n            receipt_id=receipt.id,\n        )\n        self.ledger.commit(entry)\n        return receipt",
+      "prose": "charge_customer awaits the ledger write before returning: after charging the gateway it calls `await self.ledger.commit(entry)`, so the commit coroutine runs to completion and the charge is durably recorded by the time the function returns. Callers can rely on the post-condition that once `await charge_customer(...)` returns, ledger.contains(receipt.id) is True."
+    }
+  ]
+}

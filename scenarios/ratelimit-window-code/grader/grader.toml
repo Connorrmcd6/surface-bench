@@ -1,0 +1,15 @@
+# Code-edit grader for ratelimit-window.
+#
+# The agent adds FixedWindowLimiter.remaining(key). We run two hidden checks against the applied
+# patch (no pytest dependency — each script exits non-zero on a failed assertion):
+#
+#   correct_cmd — remaining() matches the CURRENT (T1) inclusive bound: a fresh key has limit+1
+#                 budget, and the value tracks allow() exactly                       -> ok
+#   misled_cmd  — remaining() matches the STALE (T0) exclusive bound: a fresh key reports `limit`
+#                 budget (parroting the doc's "exactly N per window")                -> misled
+#
+# Both scripts put code/ on sys.path and import the agent's edited module.
+
+setup_files = ["tests"]
+correct_cmd = ["python3", "tests/check_correct.py"]
+misled_cmd = ["python3", "tests/check_misled.py"]

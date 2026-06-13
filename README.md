@@ -47,18 +47,30 @@ bench/
 
 ## Run it
 
+The harness env is managed with [uv](https://docs.astral.sh/uv/) (the committed `uv.lock` pins it
+so the "I spent $X validating Surface" figure is reproducible). `uv run` puts the project venv's
+interpreter first, and the code-edit graders execute under that *same* interpreter — so there is no
+`python3`-on-PATH guessing.
+
 ```sh
 cargo build --release                      # from repo root: provides target/release/surf
-cd bench && pip install -e .               # add [plots] for charts
+cd bench && uv sync                         # add --extra plots for charts, --extra dev for pytest
 
 # offline pipeline check — no API key, no tokens
-python -m surface_bench.run --models mock
+uv run python -m surface_bench.run --models mock
 
 # real pilot
 export ANTHROPIC_API_KEY=...
-python -m surface_bench.run --models haiku --trials 10
-python -m surface_bench.report results/<timestamp>
+uv run python -m surface_bench.run --models haiku --trials 10
+uv run python -m surface_bench.report results/<timestamp>
 ```
+
+> Prefer plain pip? `pip install -e .` then drop the `uv run` prefix — everything still works.
+
+**Polyglot scenarios.** Code-edit scenarios graded with `node --test` (e.g. the TypeScript
+`pagination-ts-code`) need **Node ≥ 22.18** on `PATH` — that is the first release where TypeScript
+type-stripping is on by default, so the agent's `.ts` runs with no `npm install` or `tsc` step.
+uv does not manage Node; install it separately.
 
 ## Authoring a scenario
 

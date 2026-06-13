@@ -1,0 +1,12 @@
+# Code-edit grader for pagination-ts (polyglot: graded by Node's built-in test runner).
+#
+# The agent adds `pageCount(total)` to pagination.ts. We run two hidden checks against the applied
+# patch. Node strips the TypeScript types at load time (>=22.18), so no install/tsc step is needed;
+# `node --test` exits non-zero if any assertion fails.
+#
+#   correct_cmd — pageCount uses the CURRENT default page size (25): 100 items -> 4 pages   -> ok
+#   misled_cmd  — pageCount uses the STALE default page size (50): 100 items -> 2 pages      -> misled
+
+setup_files = ["tests"]
+correct_cmd = ["node", "--test", "tests/correct.test.ts"]
+misled_cmd = ["node", "--test", "tests/misled.test.ts"]
