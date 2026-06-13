@@ -233,7 +233,59 @@ In short: **rot you can't see makes you wrong; rot you can see makes you slow.**
 
 ---
 
-## 7. Learnings
+## 7. Cost impact for decision-makers
+
+Two cost questions matter: *how much does rot add to model spend?* (measured here) and *how much
+does rot cost in wrong work?* (measured as a rate; priced with your own numbers).
+
+### 7.1 Token spend — measured, and small
+
+Where the model can see the code, keeping docs fresh (the Surface-governed world, C2) trims the
+wasted generation that a stale doc (C1) provokes. Priced at this run's rates:
+
+| Model | Wasted model spend from stale docs (C1 − C2) |
+|---|---|
+| haiku | ≈ $0.31 per 1,000 tasks |
+| sonnet | ≈ $1.56 per 1,000 tasks |
+| opus | ≈ $1.29 per 1,000 tasks |
+
+Real but minor — and a **floor**: these are single-shot tasks, so there is no multi-turn "thrash"; a
+tool-using agent that loops on a misleading doc would waste far more. Note that where the code is
+*hidden*, a stale doc actually spends slightly *fewer* tokens (being confidently wrong is cheap), so
+token accounting alone **understates** Surface's value — the value there is correctness, next.
+
+### 7.2 Avoided wrong work — the dominant term
+
+The real cost of rot is not tokens; it is the wrong change the model ships when it cannot verify a
+stale doc. There the result is stark: **without Surface the model produced a wrong result on 100% of
+tasks that relied on a drifted, unseen dependency; with Surface (fresh docs, or the drift report)
+roughly 0%.** Price one wrong change — caught and fixed in review, or worse, shipped — and the
+saving follows directly:
+
+> **monthly saving ≈ (agent tasks / month) × (share that rely on drifted, unverifiable docs) ×
+> (failure-rate drop, ≈100%→0%) × (cost to remediate one wrong change)**
+
+Illustrative — substitute your own numbers:
+
+| Input | Example |
+|---|---|
+| Agent tasks / month | 10,000 |
+| Share touching a drifted, unseen dependency | 2% (1 in 50) |
+| Failure-rate reduction with Surface | 100% → ~0% |
+| Cost to catch & fix one wrong change | $50 (≈30 min eng @ $100/hr) |
+| **Estimated avoided rework** | **≈ $10,000 / month** |
+
+On those same 10,000 tasks the token line is a few dollars. The takeaway for a decision-maker:
+**Surface's ROI is dominated by avoided wrong work, not token savings**, and it scales with how often
+your agents act on documentation they cannot independently verify.
+
+*Measured here:* the 100%/≈0% failure rates and the token deltas. *Supplied by you:* task volume,
+exposure share, and remediation cost — the bracketed example is an illustration, not a claim about
+your environment.
+
+---
+
+## 8. Learnings
 
 - **The framing decides the result.** Our first attempt used only comprehension scenarios and a
   system prompt that said *"the source code is the ground truth."* haiku hit a 100%-success / 0%-
@@ -257,7 +309,7 @@ In short: **rot you can't see makes you wrong; rot you can see makes you slow.**
 
 ---
 
-## 8. Future work
+## 9. Future work
 
 - **Multi-turn / tool-using agent.** This pilot is single-shot. A real agent loop (read files, run
   tests, iterate) would let us measure the *thrash* cost of rot directly and is likely where the
@@ -274,7 +326,7 @@ In short: **rot you can't see makes you wrong; rot you can see makes you slow.**
 
 ---
 
-## 9. Reproducibility
+## 10. Reproducibility
 
 - Data assembled from two runs at the same prompts/grading (an original run + a resume after the
   timeout fix); every scenario has exactly 120 rows, 0 duplicates, 0 errors. See `PROVENANCE.md`.

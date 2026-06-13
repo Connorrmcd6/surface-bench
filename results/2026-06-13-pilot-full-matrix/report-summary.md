@@ -56,6 +56,32 @@ drift does.
 
 The full run cost about **$14** and completed with no errors.
 
+## What it's worth
+
+There are two kinds of savings here, and they are very different in size.
+
+The smaller one is model cost. Where the assistant can see the code, out-of-date docs make it do
+extra work, which you pay for in usage. Keeping docs accurate trims that — but only by roughly
+**$0.30 to $1.60 per thousand tasks**, depending on the model. Real, but minor. (And it's a floor:
+an assistant that works in a back-and-forth loop would waste more.)
+
+The bigger one — by far — is avoided rework. When the assistant *can't* see the code and the docs
+are wrong, it doesn't waste effort, it just produces the wrong result. In our tests that happened on
+**every such task without Surface, and essentially none with it.** Putting a number on that depends
+on your situation, but the shape is simple:
+
+> roughly: (how many tasks your assistants run) × (how often they rely on docs they can't verify) ×
+> (what it costs to catch and fix one wrong change)
+
+For example: 10,000 assistant tasks a month, 1 in 50 touching code whose docs have drifted, and $50
+to catch and fix each wrong change, works out to about **$10,000 a month** — against a few dollars of
+usage savings. The point for a decision-maker: the value of Surface is mostly in **preventing wrong
+work**, not in trimming usage bills, and it grows with how much your assistants rely on
+documentation they can't double-check.
+
+(The failure rates and usage figures are measured; the task volume, how-often, and fix-cost are
+yours to fill in — the example numbers are just an illustration.)
+
 ## What we learned
 
 - **Framing changes the result.** Our first attempt found nothing, because we had told the model to
