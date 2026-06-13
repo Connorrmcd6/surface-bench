@@ -33,6 +33,9 @@ Each task was repeated ten times across three Claude models, from the smallest t
 
 ## What we found
 
+![Left: when the code is hidden, stale docs drop every model to 0% correct, while fresh docs and the Surface report bring them back to ~100%. Right: when the code is visible, stale docs don't cause errors but make the model write more (extra cost).](overview.png)
+
+
 **When the relevant code was hidden:**
 
 - Stale docs made the model wrong every time — never correct, and it confidently repeated the

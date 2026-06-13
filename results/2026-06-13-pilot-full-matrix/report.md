@@ -2,7 +2,10 @@
 
 A standalone write-up of the first full pilot: what we ran, why, how, what we observed, and what we
 learned. Machine-readable metrics are in `summary.json`; the raw per-call data is in `raw.jsonl`;
-per-model success plots are `success_{haiku,sonnet,opus}.png`. Run provenance is in `PROVENANCE.md`.
+the figures are `overview.png` (two-panel summary) and `cascade_success.png` (the headline chart).
+Run provenance is in `PROVENANCE.md`.
+
+![Overview — left: with the code hidden, stale docs drop every model to 0% correct while fresh docs and the Surface report restore it; right: with the code visible, rot doesn't cause errors but raises token cost.](overview.png)
 
 ---
 

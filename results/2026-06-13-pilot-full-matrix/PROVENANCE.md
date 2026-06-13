@@ -40,5 +40,6 @@ wasted-token tax of rot you *can* see.
 
 Files: `raw.jsonl` (all 1320 rows) · `summary.json` (machine-readable rates, CIs, deltas) ·
 `report.md` (full authored write-up: overview, hypotheses, methodology, prompts, results,
-interpretation, learnings, future work) · `success_{haiku,sonnet,opus}.png` · `run.json` (original
-run metadata).
+interpretation, learnings, future work) · `report-summary.md` (plain-language version) ·
+`overview.png` (two-panel summary figure) · `cascade_success.png` (headline chart) · `run.json`
+(original run metadata).
