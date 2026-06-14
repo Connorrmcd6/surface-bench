@@ -127,6 +127,83 @@ class MockToolModel:
         )
 
 
+# ---- Anthropic tool-use translation ---------------------------------------------------------
+# Pure converters between the neutral loop format (agent.run_agent) and the Anthropic wire format,
+# kept at module scope so they can be unit-tested without a network call (the riskiest part of any
+# provider adapter is the message/tool round-trip).
+
+
+def _anthropic_tools(tools: list[dict]) -> list[dict]:
+    return [
+        {"name": t["name"], "description": t["description"], "input_schema": t["parameters"]}
+        for t in tools
+    ]
+
+
+def _anthropic_blocks_from_step(step: Step) -> list[dict]:
+    # Fallback reconstruction when a Step has no provider_msg (e.g. a mock); the real adapter always
+    # stores provider_msg, so this just keeps history valid for non-Anthropic-authored turns.
+    blocks: list[dict] = []
+    if step.text:
+        blocks.append({"type": "text", "text": step.text})
+    for tc in step.tool_calls:
+        blocks.append({"type": "tool_use", "id": tc.id, "name": tc.name, "input": tc.args})
+    return blocks
+
+
+def _anthropic_messages(messages: list[dict]) -> list[dict]:
+    # Anthropic requires alternating roles, so we coalesce consecutive same-role turns — in
+    # particular a tool_result user-turn followed by a nudge user-turn become one user message.
+    out: list[dict] = []
+
+    def push(role: str, blocks: list[dict]) -> None:
+        if out and out[-1]["role"] == role:
+            out[-1]["content"].extend(blocks)
+        else:
+            out.append({"role": role, "content": list(blocks)})
+
+    for m in messages:
+        if m["role"] == "user":
+            push("user", [{"type": "text", "text": m["content"]}])
+        elif m["role"] == "assistant":
+            step = m["step"]
+            blocks = step.provider_msg if step.provider_msg is not None else _anthropic_blocks_from_step(step)
+            push("assistant", blocks)
+        elif m["role"] == "tool":
+            push(
+                "user",
+                [
+                    {"type": "tool_result", "tool_use_id": r["id"], "content": r["content"]}
+                    for r in m["results"]
+                ],
+            )
+    return out
+
+
+def _step_from_anthropic(resp) -> Step:
+    text = ""
+    calls: list[ToolCall] = []
+    provider: list[dict] = []
+    for b in resp.content:
+        btype = getattr(b, "type", None)
+        if btype == "text":
+            text += b.text
+            provider.append({"type": "text", "text": b.text})
+        elif btype == "tool_use":
+            args = dict(b.input)
+            calls.append(ToolCall(id=b.id, name=b.name, args=args))
+            provider.append({"type": "tool_use", "id": b.id, "name": b.name, "input": args})
+    u = resp.usage
+    return Step(
+        text=text,
+        tool_calls=calls,
+        input_tokens=getattr(u, "input_tokens", 0),
+        output_tokens=getattr(u, "output_tokens", 0),
+        stop_reason=getattr(resp, "stop_reason", "") or "",
+        provider_msg=provider,
+    )
+
+
 class AnthropicModel:
     def __init__(self, name: str, model_id: str, temperature: float, max_tokens: int):
         try:
@@ -159,6 +236,17 @@ class AnthropicModel:
             output_tokens=getattr(u, "output_tokens", 0),
             raw_usage=u.model_dump() if hasattr(u, "model_dump") else {},
         )
+
+    def step(self, system: str, messages: list[dict], tools: list[dict]) -> Step:
+        resp = self._client.messages.create(
+            model=self.model_id,
+            system=system,
+            max_tokens=self.max_tokens,
+            temperature=self.temperature,
+            tools=_anthropic_tools(tools),
+            messages=_anthropic_messages(messages),
+        )
+        return _step_from_anthropic(resp)
 
 
 def build_model(
