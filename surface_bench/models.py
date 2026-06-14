@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from typing import Protocol
+from typing import Any, Protocol
 
 
 @dataclass
@@ -28,6 +28,38 @@ class Model(Protocol):
     name: str
 
     def complete(self, system: str, user: str) -> Completion: ...
+
+
+# ---- Multi-turn (agentic) types ------------------------------------------------------------
+# A provider-neutral one-turn result. Each adapter (Anthropic/OpenAI/Gemini) translates its wire
+# response into a `Step` and stashes the raw assistant message in `provider_msg`, so the agent loop
+# can echo it back verbatim on the next turn without the loop ever learning the provider's shape.
+
+
+@dataclass
+class ToolCall:
+    id: str
+    name: str
+    args: dict
+
+
+@dataclass
+class Step:
+    text: str = ""
+    tool_calls: list[ToolCall] = field(default_factory=list)
+    input_tokens: int = 0
+    output_tokens: int = 0
+    stop_reason: str = ""
+    provider_msg: Any = None  # raw assistant message, re-sent verbatim into history
+
+
+class ToolModel(Protocol):
+    """A model that can run the multi-turn loop. Separate from `Model` so single-shot-only adapters
+    don't have to implement `step`. `messages` is the neutral history built by `agent.run_agent`."""
+
+    name: str
+
+    def step(self, system: str, messages: list[dict], tools: list[dict]) -> Step: ...
 
 
 class MockModel:
@@ -50,6 +82,28 @@ class MockModel:
         text = self._replies.get(self._condition, self._default)
         # Synthetic output-token count so metrics/report have something to aggregate offline.
         return Completion(text=text, input_tokens=len(user.split()), output_tokens=len(text.split()))
+
+
+class MockToolModel:
+    """Offline tool-using model for loop tests: returns a fixed `script` of `Step`s, one per call.
+
+    Once the script is exhausted it falls back to a text-only `Step` (no tool calls), which the loop
+    treats as a final answer — so a script that never calls `final_answer` still terminates cleanly
+    (exercising the max-turns / forced-answer path). No network, no key.
+    """
+
+    def __init__(self, name: str = "mock-tool", script: list[Step] | None = None, fallback: str = ""):
+        self.name = name
+        self._script = list(script or [])
+        self._fallback = fallback
+        self._i = 0
+
+    def step(self, system: str, messages: list[dict], tools: list[dict]) -> Step:
+        if self._i < len(self._script):
+            step = self._script[self._i]
+            self._i += 1
+            return step
+        return Step(text=self._fallback, output_tokens=len(self._fallback.split()))
 
 
 class AnthropicModel:
