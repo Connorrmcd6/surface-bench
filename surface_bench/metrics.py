@@ -58,7 +58,9 @@ def _bootstrap_mean(xs: list[float], n_boot: int = 10000, seed: int = 0):
 
 
 def _bootstrap_delta(a: list[float], b: list[float], n_boot: int = 10000, seed: int = 0):
-    """Bootstrap CI for mean(a) - mean(b)."""
+    """Bootstrap CI for mean(a) - mean(b), plus an approximate two-sided p-value (the share of the
+    resampled difference distribution on the far side of zero, doubled). The p-value feeds the
+    Holm-Bonferroni correction across the comparison family; the CI is still the primary readout."""
     if not a or not b:
         return None
     rng = random.Random(seed)
@@ -70,7 +72,25 @@ def _bootstrap_delta(a: list[float], b: list[float], n_boot: int = 10000, seed: 
     diffs.sort()
     lo = diffs[int(0.025 * n_boot)]
     hi = diffs[int(0.975 * n_boot) - 1]
-    return (sum(a) / len(a) - sum(b) / len(b), lo, hi)
+    n_le = sum(1 for d in diffs if d <= 0)
+    n_ge = sum(1 for d in diffs if d >= 0)
+    p = min(1.0, 2 * min(n_le, n_ge) / n_boot)
+    return (sum(a) / len(a) - sum(b) / len(b), lo, hi, p)
+
+
+def _holm(entries: list[dict], alpha: float = 0.05) -> None:
+    """Holm-Bonferroni step-down over delta dicts (each carrying a "p"); sets "significant_holm" on
+    each in place. Once a hypothesis fails to clear its threshold, it and all weaker ones fail."""
+    ranked = sorted(entries, key=lambda d: d.get("p", 1.0))
+    m = len(ranked)
+    still_rejecting = True
+    for i, d in enumerate(ranked):
+        thresh = alpha / (m - i)
+        if still_rejecting and d.get("p", 1.0) <= thresh:
+            d["significant_holm"] = True
+        else:
+            still_rejecting = False
+            d["significant_holm"] = False
 
 
 def summarize(rows: list[dict]) -> dict:
@@ -91,8 +111,9 @@ def summarize(rows: list[dict]) -> dict:
                 "misled_ci": mr.wilson(),
             }
 
-    # Headline deltas (success rate) per model.
-    pairs = [("C2", "C1"), ("C0", "C1"), ("C3", "C1"), ("C2", "C0")]
+    # Headline deltas (success rate) per model. C3-Cw / Cw-C1 isolate whether Surface's *corrected
+    # code* (C3) drives recovery, or merely the suspicion a generic warning (Cw) would also raise.
+    pairs = [("C2", "C1"), ("C0", "C1"), ("C3", "C1"), ("C2", "C0"), ("C3", "Cw"), ("Cw", "C1")]
 
     def delta_block(subset: list[dict], model: str) -> dict:
         out: dict[str, dict] = {}
@@ -101,15 +122,20 @@ def summarize(rows: list[dict]) -> dict:
                 _samples(subset, model, hi, "ok"), _samples(subset, model, lo, "ok")
             )
             if bs is not None:
-                point, ci_lo, ci_hi = bs
+                point, ci_lo, ci_hi, p = bs
                 out[f"{hi}-{lo}"] = {
                     "delta": point,
                     "ci": [ci_lo, ci_hi],
+                    "p": p,
                     "significant": ci_lo > 0 or ci_hi < 0,
                 }
         return out
 
     deltas = {model: delta_block(rows, model) for model in models}
+    # Holm-Bonferroni across the whole success-delta family (every model x pair), so a handful of
+    # comparisons don't manufacture significance. CI-significance is kept as the headline; the Holm
+    # flag is the conservative cross-check for the write-up.
+    _holm([d for model in models for d in deltas[model].values()])
 
     # The gradient: the same deltas sliced by complexity tier. The headline of the experiment is
     # that the Surface effect (C2-C1) *grows* as re-deriving truth from code gets more expensive.
@@ -151,7 +177,7 @@ def summarize(rows: list[dict]) -> dict:
         for hi, lo in [("C1", "C2"), ("C1", "C0"), ("C1", "C3")]:
             bs = _bootstrap_delta(out_tokens(model, hi), out_tokens(model, lo))
             if bs is not None:
-                point, ci_lo, ci_hi = bs
+                point, ci_lo, ci_hi, _p = bs
                 token_deltas[model][f"{hi}-{lo}"] = {
                     "delta": point,
                     "ci": [ci_lo, ci_hi],
@@ -172,7 +198,83 @@ def summarize(rows: list[dict]) -> dict:
         },
     }
 
-    return {
+    # Verification (multi-turn only): the headline of the agentic track. Among rows where the agent
+    # *could* read the hidden dependency, did it? A confident stale doc (C1) should suppress that
+    # check relative to no doc (C0) — H4 — and within C1 the verifiers should be right while the
+    # non-verifiers are misled (H5, the mediation).
+    multi = [r for r in rows if "verified_hidden" in r]
+    verification: dict[str, dict[str, dict]] = defaultdict(dict)
+    verification_deltas: dict[str, dict[str, dict]] = defaultdict(dict)
+    mediation: dict[str, dict] = {}
+    if multi:
+        for model in models:
+            for cond in conditions:
+                ver = _samples(multi, model, cond, "verified_hidden")
+                vr = Rate(len(ver), sum(ver))
+                # success among rows that actually verified — verifying should rescue you
+                vt = [
+                    r
+                    for r in multi
+                    if r["model"] == model and r["condition"] == cond and r.get("verified_hidden")
+                ]
+                vt_ok = sum(1 for r in vt if r.get("ok")) / len(vt) if vt else None
+                verification[model][cond] = {
+                    "n": vr.n,
+                    "verification_rate": vr.rate,
+                    "verification_ci": vr.wilson(),
+                    "n_verified": vr.k,
+                    "verified_then_correct": vt_ok,
+                }
+            # H4: does the stale doc suppress verification vs no doc? (C0 − C1, positive = suppressed)
+            for hi, lo in [("C0", "C1"), ("C2", "C1")]:
+                bs = _bootstrap_delta(
+                    _samples(multi, model, hi, "verified_hidden"),
+                    _samples(multi, model, lo, "verified_hidden"),
+                )
+                if bs is not None:
+                    point, ci_lo, ci_hi, p = bs
+                    verification_deltas[model][f"{hi}-{lo}"] = {
+                        "delta": point,
+                        "ci": [ci_lo, ci_hi],
+                        "p": p,
+                        "significant": ci_lo > 0 or ci_hi < 0,
+                    }
+            # H5 mediation: within C1, success for verifiers vs non-verifiers.
+            c1 = [r for r in multi if r["model"] == model and r["condition"] == "C1"]
+            ver_rows = [r for r in c1 if r.get("verified_hidden")]
+            unver_rows = [r for r in c1 if not r.get("verified_hidden")]
+            mediation[model] = {
+                "n_verified": len(ver_rows),
+                "verified_success": (sum(bool(r.get("ok")) for r in ver_rows) / len(ver_rows)) if ver_rows else None,
+                "n_unverified": len(unver_rows),
+                "unverified_success": (sum(bool(r.get("ok")) for r in unver_rows) / len(unver_rows)) if unver_rows else None,
+            }
+
+    # Per-scenario breakdown — catches a single broken fixture hiding inside a family average (and is
+    # what the C2-fresh oracle reads). Verification rate is included where the run was multi-turn.
+    scenarios = sorted({r["scenario"] for r in rows})
+    by_scenario: dict[str, dict[str, dict]] = {}
+    for sc in scenarios:
+        sub = [r for r in rows if r["scenario"] == sc]
+        by_scenario[sc] = {}
+        for model in models:
+            cells = {}
+            for cond in conditions:
+                ok = _samples(sub, model, cond, "ok")
+                if not ok:
+                    continue
+                cell = {"n": len(ok), "success": sum(ok) / len(ok)}
+                vh = [
+                    r
+                    for r in sub
+                    if r["model"] == model and r["condition"] == cond and "verified_hidden" in r
+                ]
+                if vh:
+                    cell["verification_rate"] = sum(bool(r["verified_hidden"]) for r in vh) / len(vh)
+                cells[cond] = cell
+            by_scenario[sc][model] = cells
+
+    out = {
         "models": models,
         "conditions": conditions,
         "tiers": tiers,
@@ -182,4 +284,10 @@ def summarize(rows: list[dict]) -> dict:
         "by_tier": by_tier,
         "tokens": tokens,
         "token_deltas": token_deltas,
+        "by_scenario": by_scenario,
     }
+    if multi:
+        out["verification"] = verification
+        out["verification_deltas"] = verification_deltas
+        out["mediation"] = mediation
+    return out

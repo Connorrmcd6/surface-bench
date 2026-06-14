@@ -11,13 +11,14 @@ from fnmatch import fnmatch
 
 from .scenarios import Scenario
 
-CONDITIONS = ("C0", "C1", "C2", "C3")
+CONDITIONS = ("C0", "C1", "C2", "C3", "Cw")
 
 CONDITION_LABEL = {
     "C0": "code only (no documentation)",
     "C1": "code + stale documentation",
     "C2": "code + fresh documentation",
     "C3": "code + stale documentation + surf divergence report",
+    "Cw": "code + stale documentation + generic staleness warning",
 }
 
 # Deliberately minimal and persona-free: no "you are an expert…" framing (which primes diligent,
@@ -57,6 +58,16 @@ def _doc_block(scenario: Scenario, condition: str) -> str:
             "longer matches the code it points at — the documented span has changed since the "
             "claim was last confirmed:\n\n"
             f"```json\n{scenario.surf_report.rstrip()}\n```"
+        )
+    if condition == "Cw":
+        # Control isolating Surface's *specific* contribution: a generic staleness warning with no
+        # corrected code, no file, no line, no value. If Cw recovers like C3, the value was just
+        # "any skepticism prompt"; if Cw stays at C1, only Surface's concrete fix helps. Keep this
+        # deliberately content-free — leaking the truth here would collapse the C3-vs-Cw contrast.
+        block += (
+            "\n\n## Note\n\n"
+            "This documentation may be out of date. It was last reviewed some time ago and might "
+            "no longer reflect the current behaviour of the code."
         )
     return block
 
