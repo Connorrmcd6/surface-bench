@@ -1,0 +1,25 @@
+# QA grader for cascade-ratelimit-burst.
+#
+# The agent ends its answer with:
+#   VERDICT: limiter_mode=<fixed_window|token_bucket>; burst_allowed=<yes|no>
+#
+#   - correct (current/T1 code): limiter_mode=token_bucket AND burst_allowed=yes
+#       (token bucket lets an idle client spend accrued tokens in a burst)
+#   - misled  (stale/T0 claim):  limiter_mode=fixed_window OR burst_allowed=no
+#       (parroting the doc's fixed-window, no-burst model)
+
+type = "verdict"
+
+[fields.limiter_mode]
+pattern = "limiter_mode\\s*=\\s*(fixed_window|token_bucket)"
+
+[fields.burst_allowed]
+pattern = "burst_allowed\\s*=\\s*(yes|no)"
+
+[correct]
+limiter_mode = "token_bucket"
+burst_allowed = "yes"
+
+[misled]
+limiter_mode = "fixed_window"
+burst_allowed = "no"

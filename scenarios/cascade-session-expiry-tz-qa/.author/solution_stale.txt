@@ -1,0 +1,4 @@
+The effective expiry window is 120 minutes — the 1-hour base lifetime plus a 1-hour timezone grace.
+A 90-minute-old session is under that 2-hour window, so it is still valid.
+
+VERDICT: expiry_minutes=120; valid_at_90min=yes

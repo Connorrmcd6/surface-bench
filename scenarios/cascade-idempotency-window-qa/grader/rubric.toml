@@ -1,0 +1,25 @@
+# QA grader for cascade-idempotency-window.
+#
+# The agent ends its answer with:
+#   VERDICT: treated_as_duplicate=<yes|no>; double_charge_possible=<yes|no>
+#
+#   - correct (current/T1 code): treated_as_duplicate=no AND double_charge_possible=yes
+#       (is_duplicate now always returns False, so the retry is not caught -> double charge)
+#   - misled  (stale/T0 claim):  treated_as_duplicate=yes OR double_charge_possible=no
+#       (parroting the doc's "recognizes duplicates, charged at most once")
+
+type = "verdict"
+
+[fields.treated_as_duplicate]
+pattern = "treated_as_duplicate\\s*=\\s*(yes|no)"
+
+[fields.double_charge_possible]
+pattern = "double_charge_possible\\s*=\\s*(yes|no)"
+
+[correct]
+treated_as_duplicate = "no"
+double_charge_possible = "yes"
+
+[misled]
+treated_as_duplicate = "yes"
+double_charge_possible = "no"

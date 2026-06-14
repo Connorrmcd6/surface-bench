@@ -1,0 +1,18 @@
+id = "cascade-session-expiry-tz-qa"
+title = "Auth: session expiry lost its timezone grace (effective window 2h -> 1h)"
+lang = "python"
+task_type = "qa"
+tier = "T2"  # premise: the effective expiry window is load-bearing for a validity conclusion
+
+invariant = "A session is valid until its age exceeds the effective expiry window."
+
+# The drift: is_expired's threshold dropped from 7200s to 3600s. The old 2-hour window was the
+# 1-hour base lifetime plus a 1-hour timezone-offset grace measured in local time; the grace was
+# removed and expiry is now measured in UTC, so the effective window is just 1 hour. The function's
+# source is HIDDEN, so an agent knows the window only from its doc; a stale doc ("2 hours") wrongly
+# treats a 90-minute-old session as still valid.
+drift = "is_expired threshold `> 7200` (2h, local + grace) -> `> 3600` (1h, UTC)"
+
+anchor = "code/auth/session.py > is_expired"
+
+hidden_paths = ["code/auth/*.py"]

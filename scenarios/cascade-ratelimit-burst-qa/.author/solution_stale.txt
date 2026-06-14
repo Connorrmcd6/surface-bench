@@ -1,0 +1,5 @@
+The limiter uses a fixed-window admission mode. It counts requests per 60-second window and rejects
+anything beyond the per-minute limit, with no token accrual, so the client's burst cannot exceed the
+rate — the excess requests are rejected.
+
+VERDICT: limiter_mode=fixed_window; burst_allowed=no
