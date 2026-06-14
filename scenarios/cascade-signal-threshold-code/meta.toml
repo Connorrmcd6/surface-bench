@@ -1,0 +1,19 @@
+id = "cascade-signal-threshold-code"
+title = "Cascade: pager inherits a hidden trend helper's drifted alert direction (sign flip)"
+lang = "python"
+task_type = "code"
+tier = "T2"  # the alert direction is a load-bearing premise; the helper is hidden
+
+invariant = "An alert fires when a metric moves in one direction; callers must page on the same direction."
+
+# The drift: metrics/trend.py::is_alerting flipped the comparison sign. It used to alert when a
+# metric ROSE (curr - prev > 0); it now alerts when the metric DROPS (curr - prev < 0). The agent
+# edits monitor.py (visible) whose should_page applies the alert direction, but trend.py is HIDDEN,
+# so the direction comes only from the doc. A stale doc ("alerts on a rise") makes the pager fire on
+# exactly the wrong movement.
+drift = "is_alerting comparison `> 0` (rise) -> `< 0` (drop); pager reads direction from the doc, not the hidden code"
+
+anchor = "code/metrics/trend.py > is_alerting"
+edit_path = "code/monitor.py"  # the visible file the agent returns
+
+hidden_paths = ["code/metrics/*.py"]

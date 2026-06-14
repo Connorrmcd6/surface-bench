@@ -35,6 +35,9 @@ class Scenario:
     # code/ paths (or globs) present for grading but withheld from the prompt — the hidden
     # dependency in a cascade scenario, which the agent knows only through its doc.
     hidden_paths: list[str] = field(default_factory=list)
+    # code scenarios: the visible file the agent returns (e.g. "code/throttle.py"). Lets the
+    # grader-polarization self-test (tools/validate_scenario.py) build the `FILE:` block.
+    edit_path: str = ""
 
     @property
     def grader_dir(self) -> Path:
@@ -78,6 +81,7 @@ def load_scenario(path: str | Path) -> Scenario:
         surf_report=(root / "surf_report.json").read_text(),
         code=_read_code(root / "code"),
         hidden_paths=meta.get("hidden_paths", []),
+        edit_path=meta.get("edit_path", ""),
     )
 
 

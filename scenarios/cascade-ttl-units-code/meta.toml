@@ -1,0 +1,22 @@
+id = "cascade-ttl-units-code"
+title = "Cascade: warmer inherits a hidden cache policy's drifted lifetime (seconds vs ms)"
+lang = "python"
+task_type = "code"
+tier = "T1"  # the real lifetime lives in a dependency the agent cannot see — only its doc
+
+invariant = "A cache entry has a fixed lifetime; a warmer must refresh at least once per lifetime."
+
+# The drift: the TTL policy was refactored from seconds to milliseconds. The default moved from
+# `DEFAULT_TTL_SECONDS = 30` to `DEFAULT_TTL_MS = 5000`, and `lifetime_seconds()` now divides by
+# 1000 — so the true entry lifetime fell from 30s to 5s. The doc still says 30s. The agent edits
+# warmer.py (visible) whose schedule sizes from that lifetime, but ttl.py is HIDDEN, so the only
+# source of the lifetime is the policy's doc. A stale doc ("30 seconds") makes the warmer refresh
+# 6x too rarely.
+drift = "TTL units seconds -> milliseconds (true lifetime 30s -> 5s); warmer sizes from the doc, not the hidden code"
+
+anchor = "code/cache/ttl.py > TtlPolicy > lifetime_seconds"
+edit_path = "code/warmer.py"  # the visible file the agent returns
+
+# The drifted dependency: present in code/ so surf seals a real divergence and the grader probes the
+# real policy, but withheld from the prompt — the agent knows it only by doc.
+hidden_paths = ["code/cache/*.py"]

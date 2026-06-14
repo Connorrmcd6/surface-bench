@@ -1,0 +1,12 @@
+# Code-edit grader for cascade-money-rounding.
+#
+# The agent edits invoice.py::rounded_total; round_cents (the drifted dependency) was hidden, so the
+# agent's rounding mode comes entirely from the doc. Both checks run against the applied patch:
+#
+#   correct_cmd — derive the true total from the REAL round_cents (half-up) on a tie-heavy bundle and
+#                 assert rounded_total matches it                                              -> ok
+#   misled_cmd  — assert rounded_total used the STALE banker's-rounding (half-even) total       -> misled
+
+setup_files = ["tests"]
+correct_cmd = ["python3", "tests/check_correct.py"]
+misled_cmd = ["python3", "tests/check_misled.py"]

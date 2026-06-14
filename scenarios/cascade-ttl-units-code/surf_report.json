@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "divergences": [
+    {
+      "hub": "hub.md",
+      "claim": "TtlPolicy.lifetime_seconds returns the entry lifetime in seconds. The default policy uses a 30-second TTL, so lifetime_seconds() returns 30: a cached entry is considered fresh for 30 seconds after it is written, and a warmer must refresh at least once every 30 seconds.",
+      "at": "code/cache/ttl.py > TtlPolicy > lifetime_seconds",
+      "kind": "changed",
+      "old_hash": "2a59ab2d0359",
+      "new_hash": "0ab45f8ba46b",
+      "new_code": "def lifetime_seconds(self) -> float:\n        \"\"\"The entry lifetime, in seconds (the TTL is stored in milliseconds).\"\"\"\n        return self.ttl_ms / 1000.0",
+      "prose": "TtlPolicy.lifetime_seconds returns the entry lifetime in seconds. The default policy uses a 30-second TTL, so lifetime_seconds() returns 30: a cached entry is considered fresh for 30 seconds after it is written, and a warmer must refresh at least once every 30 seconds."
+    }
+  ]
+}

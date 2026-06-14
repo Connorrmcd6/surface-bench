@@ -1,0 +1,13 @@
+# Code-edit grader for cascade-ttl-units.
+#
+# The agent edits warmer.py::schedule_refreshes; the TtlPolicy (the drifted dependency) was hidden,
+# so the agent's entry lifetime comes entirely from the policy's doc. Both checks run against the
+# applied patch (each script exits non-zero on a failed assertion):
+#
+#   correct_cmd — probe the REAL hidden policy for its true lifetime (5s) and assert the schedule
+#                 sizes to it                                                                  -> ok
+#   misled_cmd  — assert the schedule sized to the STALE doc's 30-second lifetime              -> misled
+
+setup_files = ["tests"]
+correct_cmd = ["python3", "tests/check_correct.py"]
+misled_cmd = ["python3", "tests/check_misled.py"]

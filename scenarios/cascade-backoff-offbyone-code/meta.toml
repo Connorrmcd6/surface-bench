@@ -1,0 +1,18 @@
+id = "cascade-backoff-offbyone-code"
+title = "Cascade: poller inherits a hidden backoff helper's drifted attempt indexing (off-by-one)"
+lang = "python"
+task_type = "code"
+tier = "T2"  # the attempt-indexing convention is a load-bearing premise; the helper is hidden
+
+invariant = "Exponential backoff doubles each attempt from a base delay; callers must index attempts the same way."
+
+# The drift: retry/backoff.py::delay_for changed its attempt indexing from 1-based to 0-based. The
+# exponent went from `attempt - 1` to `attempt`, so for the SAME attempt number the real delay is
+# now double the documented one. The agent edits poller.py (visible) whose schedule reproduces the
+# delays, but backoff.py is HIDDEN, so the indexing convention comes only from the doc.
+drift = "delay_for exponent `attempt - 1` (1-based) -> `attempt` (0-based); poller sizes from the doc, not the hidden code"
+
+anchor = "code/retry/backoff.py > delay_for"
+edit_path = "code/poller.py"  # the visible file the agent returns
+
+hidden_paths = ["code/retry/*.py"]

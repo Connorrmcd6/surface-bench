@@ -1,0 +1,19 @@
+id = "cascade-money-rounding-code"
+title = "Cascade: invoice totals inherit a hidden money helper's drifted rounding precision"
+lang = "python"
+task_type = "code"
+tier = "T2"  # the rounding precision is a load-bearing premise; the helper is hidden
+
+invariant = "Money is rounded by one shared helper; callers must round to the same precision."
+
+# The drift: billing/money.py::round_money changed the precision it rounds to, from cents
+# (quantize to 0.01) to dimes (quantize to 0.1). At amounts whose cents aren't a whole dime the two
+# disagree (1.04 -> 1.04 cents vs 1.00 dimes), so an invoice that rounds the stale (cent) way drifts
+# from the real total. The agent edits invoice.py (visible) but money.py is HIDDEN, so the rounding
+# precision comes only from the doc.
+drift = "round_money precision quantize 0.01 (cents) -> 0.1 (dimes); invoice rounds from the doc, not the hidden code"
+
+anchor = "code/billing/money.py > round_money"
+edit_path = "code/invoice.py"  # the visible file the agent returns
+
+hidden_paths = ["code/billing/*.py"]
