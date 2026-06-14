@@ -13,6 +13,7 @@ invariant = "A fixed-window limiter admits a fixed number of requests per window
 drift = "limiter admission `<` -> `<=` (limit+1/window); batcher sizes from the doc, not the hidden code"
 
 anchor = "code/limiter/window.py > FixedWindowLimiter > allow"
+edit_path = "code/throttle.py"  # the visible file the agent returns
 
 # The drifted dependency: present in code/ so surf seals a real divergence and the grader runs the
 # batcher against the real limiter, but withheld from the prompt — the agent knows it only by doc.

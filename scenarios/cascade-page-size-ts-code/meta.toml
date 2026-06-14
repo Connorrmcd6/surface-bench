@@ -12,5 +12,6 @@ invariant = "List UIs paginate at defaultPageSize(); link builders must use the 
 drift = "defaultPageSize() 50 -> 25; the visible link builder sizes from the doc, not the hidden code"
 
 anchor = "code/pagination.ts > defaultPageSize"
+edit_path = "code/links.ts"  # the visible file the agent returns
 
 hidden_paths = ["code/pagination.ts"]

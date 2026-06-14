@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "divergences": [
+    {
+      "hub": "hub.md",
+      "claim": "delay_for(attempt) returns the backoff delay in milliseconds for a retry attempt. Attempts are 1-based: the delay is BASE_MS * 2**(attempt - 1) with BASE_MS = 100. So attempt 1 waits 100 ms, attempt 2 waits 200 ms, attempt 3 waits 400 ms, and attempt n waits 100 * 2**(n-1) ms.",
+      "at": "code/retry/backoff.py > delay_for",
+      "kind": "changed",
+      "old_hash": "93b18e377590",
+      "new_hash": "0038327b28fb",
+      "new_code": "def delay_for(attempt: int) -> int:\n    \"\"\"Backoff delay in milliseconds for a retry attempt.\n\n    Attempts are 0-based: attempt 0 waits the base delay, and each subsequent attempt doubles it.\n    \"\"\"\n    return BASE_MS << attempt",
+      "prose": "delay_for(attempt) returns the backoff delay in milliseconds for a retry attempt. Attempts are 1-based: the delay is BASE_MS * 2**(attempt - 1) with BASE_MS = 100. So attempt 1 waits 100 ms, attempt 2 waits 200 ms, attempt 3 waits 400 ms, and attempt n waits 100 * 2**(n-1) ms."
+    }
+  ]
+}

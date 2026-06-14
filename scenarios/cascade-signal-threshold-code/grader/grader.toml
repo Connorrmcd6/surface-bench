@@ -1,0 +1,12 @@
+# Code-edit grader for cascade-signal-threshold.
+#
+# The agent edits monitor.py::should_page; is_alerting (the drifted dependency) was hidden, so the
+# agent's alert direction comes entirely from the doc. Both checks run against the applied patch:
+#
+#   correct_cmd — derive expected paging from the REAL is_alerting (alerts on a drop) and assert
+#                 should_page matches it on several series                                     -> ok
+#   misled_cmd  — assert should_page used the STALE rule (alerts on a rise) on a falling series  -> misled
+
+setup_files = ["tests"]
+correct_cmd = ["python3", "tests/check_correct.py"]
+misled_cmd = ["python3", "tests/check_misled.py"]

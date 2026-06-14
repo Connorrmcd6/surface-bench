@@ -1,0 +1,11 @@
+# Code-edit grader for cascade-backoff-offbyone.
+#
+# The agent edits poller.py::delays; delay_for (the drifted dependency) was hidden, so the agent's
+# attempt-indexing convention comes entirely from the doc. Both checks run against the applied patch:
+#
+#   correct_cmd — probe the REAL delay_for (0-based) for each attempt and assert delays matches  -> ok
+#   misled_cmd  — assert delays used the STALE 1-based formula (100 * 2**(n-1))                   -> misled
+
+setup_files = ["tests"]
+correct_cmd = ["python3", "tests/check_correct.py"]
+misled_cmd = ["python3", "tests/check_misled.py"]

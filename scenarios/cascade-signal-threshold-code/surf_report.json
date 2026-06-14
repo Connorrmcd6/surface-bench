@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "divergences": [
+    {
+      "hub": "hub.md",
+      "claim": "is_alerting(prev, curr) reports whether a move from prev to curr should page. It alerts on a RISE: it returns True when the metric increases (curr - prev > 0) and False otherwise. So a pager built on it fires when a series goes UP.",
+      "at": "code/metrics/trend.py > is_alerting",
+      "kind": "changed",
+      "old_hash": "5e99087d8505",
+      "new_hash": "68cc006aa139",
+      "new_code": "def is_alerting(prev: float, curr: float) -> bool:\n    \"\"\"True when the metric has moved in the direction we page on (a drop from prev to curr).\"\"\"\n    return curr - prev < 0",
+      "prose": "is_alerting(prev, curr) reports whether a move from prev to curr should page. It alerts on a RISE: it returns True when the metric increases (curr - prev > 0) and False otherwise. So a pager built on it fires when a series goes UP."
+    }
+  ]
+}

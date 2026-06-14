@@ -13,5 +13,6 @@ invariant = "A transient operation is attempted at most max_attempts times; sche
 drift = "retry cap 3 -> 5 inside should_retry; the visible scheduler sizes from the doc, not the hidden code"
 
 anchor = "code/retry/policy.py > RetryPolicy > should_retry"
+edit_path = "code/schedule.py"  # the visible file the agent returns
 
 hidden_paths = ["code/retry/*.py"]
