@@ -19,9 +19,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from . import grade_code, grade_qa
-from .models import MockModel, build_model
+from .agent import run_agent
+from .models import build_model
 from .prompts import CONDITIONS, build_prompt
 from .scenarios import discover
+from .tools_runtime import ToolContext, scenario_sandbox, touched_hidden
 
 BENCH_ROOT = Path(__file__).resolve().parent.parent
 
@@ -48,6 +50,12 @@ def main() -> None:
     ap.add_argument("--scenarios", nargs="*", help="subset of scenario ids")
     ap.add_argument("--conditions", nargs="*", default=list(CONDITIONS))
     ap.add_argument("--trials", type=int, help="override trials from config")
+    ap.add_argument(
+        "--mode",
+        choices=("single", "multi"),
+        help="single-shot completion (v1) or multi-turn tool-using agent (v2)",
+    )
+    ap.add_argument("--max-turns", type=int, help="agent turn budget in multi mode")
     ap.add_argument("--out", help="results dir (default results/<timestamp>)")
     args = ap.parse_args()
 
@@ -55,6 +63,8 @@ def main() -> None:
     trials = args.trials or cfg.get("trials", 10)
     temperature = cfg.get("temperature", 1.0)
     max_tokens = cfg.get("max_tokens", 1024)
+    mode = args.mode or cfg.get("mode", "single")
+    max_turns = args.max_turns or cfg.get("max_turns", 8)
     model_specs = cfg.get("models", {})
     model_names = args.models or list(model_specs)
 
@@ -63,9 +73,16 @@ def main() -> None:
         sys.exit("no scenarios matched")
 
     models = {
-        n: build_model(n, model_specs[n], temperature=temperature, max_tokens=max_tokens)
+        n: build_model(
+            n, model_specs[n], temperature=temperature, max_tokens=max_tokens, mode=mode
+        )
         for n in model_names
     }
+    mock_names = {n for n in model_names if model_specs[n].get("provider") == "mock"}
+    if mode == "multi":
+        missing = [n for n, m in models.items() if not hasattr(m, "step")]
+        if missing:
+            sys.exit(f"multi mode needs a tool-using model; {missing} have no step() yet")
     # USD per token, per model (from config; 0 if unpriced, e.g. the mock).
     pricing = {
         n: (
@@ -85,6 +102,8 @@ def main() -> None:
         "trials": trials,
         "temperature": temperature,
         "max_tokens": max_tokens,
+        "mode": mode,
+        "max_turns": max_turns if mode == "multi" else None,
         "conditions": args.conditions,
         "models": {n: model_specs[n] for n in model_names},
         "scenarios": [s.id for s in scenarios],
@@ -99,7 +118,7 @@ def main() -> None:
             for condition in args.conditions:
                 system, user = build_prompt(scenario, condition)
                 for model_name, model in models.items():
-                    if isinstance(model, MockModel):
+                    if hasattr(model, "set_condition"):
                         model.set_condition(condition)
                     for trial in range(trials):
                         row = {
@@ -109,20 +128,50 @@ def main() -> None:
                             "condition": condition,
                             "model": model_name,
                             "trial": trial,
+                            "mode": mode,
                         }
                         try:
-                            comp = model.complete(system, user)
-                            grade = _grade(scenario, comp.text)
+                            if mode == "multi":
+                                # Fresh per-trial sandbox: the agent's tools can reach the hidden
+                                # dependency that the prompt withholds.
+                                with scenario_sandbox(scenario) as ws:
+                                    traj = run_agent(
+                                        model, system, user, ToolContext(ws), max_turns=max_turns
+                                    )
+                                text, in_tok, out_tok = (
+                                    traj.final_text,
+                                    traj.input_tokens,
+                                    traj.output_tokens,
+                                )
+                                agent_fields = dict(
+                                    turns=traj.turns,
+                                    stop_reason=traj.stop_reason,
+                                    tool_calls=traj.tool_calls,
+                                    verified_hidden=touched_hidden(
+                                        traj.accessed, scenario.hidden_paths
+                                    ),
+                                    per_turn_tokens=traj.per_turn_tokens,
+                                )
+                            else:
+                                comp = model.complete(system, user)
+                                text, in_tok, out_tok = (
+                                    comp.text,
+                                    comp.input_tokens,
+                                    comp.output_tokens,
+                                )
+                                agent_fields = {}
+                            grade = _grade(scenario, text)
                             in_price, out_price = pricing[model_name]
                             row.update(
-                                output=comp.text,
-                                input_tokens=comp.input_tokens,
-                                output_tokens=comp.output_tokens,
-                                cost_usd=comp.input_tokens * in_price + comp.output_tokens * out_price,
+                                output=text,
+                                input_tokens=in_tok,
+                                output_tokens=out_tok,
+                                cost_usd=in_tok * in_price + out_tok * out_price,
                                 ok=grade["ok"],
                                 misled=grade["misled"],
                                 detail=grade["detail"],
                                 parsed=grade["parsed"],
+                                **agent_fields,
                             )
                         except Exception as e:  # keep the matrix going; record the failure
                             row.update(output=None, ok=False, misled=False, error=repr(e))
@@ -134,7 +183,7 @@ def main() -> None:
                             end="",
                             file=sys.stderr,
                         )
-                        if not isinstance(model, MockModel):
+                        if model_name not in mock_names:
                             time.sleep(0)  # placeholder for rate-limit backoff hook
     print(f"\nwrote {raw_path}", file=sys.stderr)
 

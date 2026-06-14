@@ -92,18 +92,39 @@ class MockToolModel:
     (exercising the max-turns / forced-answer path). No network, no key.
     """
 
-    def __init__(self, name: str = "mock-tool", script: list[Step] | None = None, fallback: str = ""):
+    def __init__(
+        self,
+        name: str = "mock-tool",
+        script: list[Step] | None = None,
+        fallback: str = "",
+        default: str = "",
+        replies: dict | None = None,
+    ):
         self.name = name
         self._script = list(script or [])
         self._fallback = fallback
+        self._default = default
+        self._replies = replies or {}
+        self._condition: str | None = None
         self._i = 0
+
+    def set_condition(self, condition: str) -> None:
+        self._condition = condition
 
     def step(self, system: str, messages: list[dict], tools: list[dict]) -> Step:
         if self._i < len(self._script):
             step = self._script[self._i]
             self._i += 1
             return step
-        return Step(text=self._fallback, output_tokens=len(self._fallback.split()))
+        if self._fallback:
+            # Text-only turn -> the loop accepts it as the answer (exercises the forced-answer path).
+            return Step(text=self._fallback, output_tokens=len(self._fallback.split()))
+        # Canned mode (run.py offline smoke): answer immediately with the condition's reply.
+        reply = self._replies.get(self._condition, self._default)
+        return Step(
+            tool_calls=[ToolCall(id="final", name="final_answer", args={"answer": reply})],
+            output_tokens=len(reply.split()),
+        )
 
 
 class AnthropicModel:
@@ -140,9 +161,15 @@ class AnthropicModel:
         )
 
 
-def build_model(name: str, spec: dict, *, temperature: float, max_tokens: int) -> Model:
+def build_model(
+    name: str, spec: dict, *, temperature: float, max_tokens: int, mode: str = "single"
+) -> Model:
     provider = spec.get("provider")
     if provider == "mock":
+        if mode == "multi":
+            return MockToolModel(
+                name=name, default=spec.get("default", ""), replies=spec.get("replies")
+            )
         return MockModel(name=name, default=spec.get("default", ""), replies=spec.get("replies"))
     if provider == "anthropic":
         return AnthropicModel(

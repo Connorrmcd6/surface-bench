@@ -188,7 +188,13 @@ class ToolContext:
     def verified(self, hidden_paths: list[str]) -> bool:
         """True iff the agent read/grepped a file matching one of the scenario's hidden globs —
         i.e. it went and checked the dependency the (possibly stale) doc describes."""
-        return any(fnmatch(a, pat) for a in self.accessed for pat in hidden_paths)
+        return touched_hidden(self.accessed, hidden_paths)
+
+
+def touched_hidden(accessed: list[str], hidden_paths: list[str]) -> bool:
+    """Did any accessed path match a hidden glob? The basis of the verification-rate metric; lives
+    at module scope so the runner can compute it from a `Trajectory.accessed` list without a ctx."""
+    return any(fnmatch(a, pat) for a in accessed for pat in hidden_paths)
 
 
 def dispatch(name: str, args: dict, ctx: ToolContext) -> tuple[str, bool]:

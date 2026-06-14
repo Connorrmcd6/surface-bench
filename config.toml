@@ -4,6 +4,11 @@ trials = 10           # completions per (scenario x condition x model)
 temperature = 1.0     # realistic sampling; stochasticity is part of what we measure
 max_tokens = 1024
 
+# "single" = one-shot completion (v1). "multi" = multi-turn tool-using agent (v2 / #102): the model
+# gets read-only tools and chooses whether to verify the doc against the hidden dependency.
+mode = "single"
+max_turns = 8         # agent turn budget in multi mode
+
 # Models are referenced by short name. provider="mock" needs no API key (offline pipeline test).
 [models.mock]
 provider = "mock"
