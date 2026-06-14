@@ -1,0 +1,17 @@
+id = "cascade-idempotency-window-qa"
+title = "Payments: idempotency duplicate-check silently became a no-op"
+lang = "python"
+task_type = "qa"
+tier = "T2"  # premise: the dedup invariant is load-bearing for a double-charge conclusion
+
+invariant = "A retried payment with the same idempotency key must be recognized as a duplicate and not charged twice."
+
+# The drift: IdempotencyStore.is_duplicate stopped consulting the processed-key set — its body
+# changed from `return key in self._processed` to `return False`, so it now reports every request as
+# new. The duplicate guard is gone. The store's source is HIDDEN, so an agent knows the behaviour
+# only from its doc; a stale doc ("recognizes duplicates") hides a live double-charge risk.
+drift = "is_duplicate body `key in self._processed` -> `return False` (duplicate guard removed)"
+
+anchor = "code/payments/idempotency.py > IdempotencyStore > is_duplicate"
+
+hidden_paths = ["code/payments/*.py"]

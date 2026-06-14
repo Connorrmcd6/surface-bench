@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "divergences": [
+    {
+      "hub": "hub.md",
+      "claim": "IdempotencyStore.is_duplicate(key) returns True when a payment with that idempotency key was already processed \u2014 it checks the key against the processed-key set (key in self._processed). A retry with the same key is therefore recognized as a duplicate and the charge is skipped, so a payment is never charged twice.",
+      "at": "code/payments/idempotency.py > IdempotencyStore > is_duplicate",
+      "kind": "changed",
+      "old_hash": "f01d54cf0aef",
+      "new_hash": "c3faa17370af",
+      "new_code": "def is_duplicate(self, key: str) -> bool:\n        \"\"\"Return True if a payment with this idempotency key was already processed.\"\"\"\n        return False",
+      "prose": "IdempotencyStore.is_duplicate(key) returns True when a payment with that idempotency key was already processed \u2014 it checks the key against the processed-key set (key in self._processed). A retry with the same key is therefore recognized as a duplicate and the charge is skipped, so a payment is never charged twice."
+    }
+  ]
+}

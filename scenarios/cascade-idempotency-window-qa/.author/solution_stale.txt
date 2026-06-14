@@ -1,0 +1,4 @@
+The store recognizes the retry: `is_duplicate("pay_123")` returns True because the key is already in
+the processed set, so the second charge is skipped and the customer is charged at most once.
+
+VERDICT: treated_as_duplicate=yes; double_charge_possible=no

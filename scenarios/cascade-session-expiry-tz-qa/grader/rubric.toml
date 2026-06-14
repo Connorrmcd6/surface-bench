@@ -1,0 +1,25 @@
+# QA grader for cascade-session-expiry-tz.
+#
+# The agent ends its answer with:
+#   VERDICT: expiry_minutes=<number>; valid_at_90min=<yes|no>
+#
+#   - correct (current/T1 code): expiry_minutes=60 AND valid_at_90min=no
+#       (UTC, grace removed: a 90-minute-old session is past the 60-minute window)
+#   - misled  (stale/T0 claim):  expiry_minutes=120 OR valid_at_90min=yes
+#       (parroting the doc's 2-hour window with the timezone grace)
+
+type = "verdict"
+
+[fields.expiry_minutes]
+pattern = "expiry_minutes\\s*=\\s*(\\d+)"
+
+[fields.valid_at_90min]
+pattern = "valid_at_90min\\s*=\\s*(yes|no)"
+
+[correct]
+expiry_minutes = "60"
+valid_at_90min = "no"
+
+[misled]
+expiry_minutes = "120"
+valid_at_90min = "yes"

@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "divergences": [
+    {
+      "hub": "hub.md",
+      "claim": "RatePolicy.admission_mode returns \"fixed_window\". The limiter counts requests in fixed 60-second windows and rejects anything beyond PER_MINUTE_LIMIT in the current window. There is no token accrual, so a client cannot exceed the per-minute limit even briefly \u2014 bursts above the limit are not possible.",
+      "at": "code/limiter/policy.py > RatePolicy > admission_mode",
+      "kind": "changed",
+      "old_hash": "b3055e5a988e",
+      "new_hash": "90c822614537",
+      "new_code": "def admission_mode(self) -> str:\n        \"\"\"Which admission algorithm the limiter uses to decide whether to admit a request.\"\"\"\n        return \"token_bucket\"",
+      "prose": "RatePolicy.admission_mode returns \"fixed_window\". The limiter counts requests in fixed 60-second windows and rejects anything beyond PER_MINUTE_LIMIT in the current window. There is no token accrual, so a client cannot exceed the per-minute limit even briefly \u2014 bursts above the limit are not possible."
+    }
+  ]
+}

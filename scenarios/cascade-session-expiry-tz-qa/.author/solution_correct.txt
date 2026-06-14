@@ -1,0 +1,5 @@
+The effective expiry window is 60 minutes: the timezone grace was removed and expiry is measured in
+UTC against the 1-hour base lifetime. A 90-minute-old session is past that window, so it has expired
+and is no longer valid.
+
+VERDICT: expiry_minutes=60; valid_at_90min=no

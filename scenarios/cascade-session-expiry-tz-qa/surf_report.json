@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "divergences": [
+    {
+      "hub": "hub.md",
+      "claim": "is_expired(age_seconds) returns True once a session is older than 7200 seconds \u2014 120 minutes (2 hours). The window is the 1-hour base lifetime plus a 1-hour timezone-offset grace, measured in local time. A session under 2 hours old is still valid.",
+      "at": "code/auth/session.py > is_expired",
+      "kind": "changed",
+      "old_hash": "44c1968c2e04",
+      "new_hash": "5a7ca998bba9",
+      "new_code": "def is_expired(age_seconds: int) -> bool:\n    \"\"\"Return True if a session of this age (in seconds) has expired.\n\n    Expiry is measured in UTC against the base session lifetime.\n    \"\"\"\n    return age_seconds > 3600",
+      "prose": "is_expired(age_seconds) returns True once a session is older than 7200 seconds \u2014 120 minutes (2 hours). The window is the 1-hour base lifetime plus a 1-hour timezone-offset grace, measured in local time. A session under 2 hours old is still valid."
+    }
+  ]
+}

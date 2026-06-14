@@ -1,0 +1,5 @@
+The retry is not caught. `is_duplicate` always returns False now, so the second request with key
+`pay_123` is not recognized as a duplicate and the payment is processed again — the customer can be
+charged twice.
+
+VERDICT: treated_as_duplicate=no; double_charge_possible=yes

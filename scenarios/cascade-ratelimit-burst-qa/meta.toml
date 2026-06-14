@@ -1,0 +1,18 @@
+id = "cascade-ratelimit-burst-qa"
+title = "Rate limiting: admission mode switched from fixed-window to token-bucket (bursts now possible)"
+lang = "python"
+task_type = "qa"
+tier = "T2"  # premise: the admission mode is load-bearing for whether bursts can exceed the limit
+
+invariant = "Whether a client can briefly exceed the per-minute rate depends on the limiter's admission mode."
+
+# The drift: RatePolicy.admission_mode changed its returned mode string from "fixed_window" to
+# "token_bucket". A fixed window strictly caps each 60s window (no bursts); a token bucket lets an
+# idle client accrue tokens and spend them in a short burst above the rate. The policy's source is
+# HIDDEN, so an agent knows the mode only from its doc; a stale doc ("fixed_window") wrongly implies
+# bursts are impossible.
+drift = "admission_mode return string `fixed_window` -> `token_bucket` (bursts above the limit now possible)"
+
+anchor = "code/limiter/policy.py > RatePolicy > admission_mode"
+
+hidden_paths = ["code/limiter/*.py"]

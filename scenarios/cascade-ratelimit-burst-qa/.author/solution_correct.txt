@@ -1,0 +1,5 @@
+The limiter uses a token-bucket admission mode. Because an idle client accrues tokens up to the
+bucket capacity, it can spend them in a short burst that briefly exceeds the per-minute rate, so the
+burst is admitted (only the long-run average is capped).
+
+VERDICT: limiter_mode=token_bucket; burst_allowed=yes
