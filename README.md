@@ -73,6 +73,7 @@ selects — no `python3`-on-PATH guessing.
 uv sync                                      # base deps (anthropic)
 uv sync --extra dev                          # + pytest (to run the test suite)
 uv sync --extra plots                        # + matplotlib (report figures)
+uv sync --extra providers                    # + openai, google-genai (cross-provider runs)
 ```
 
 **Install `surf`** — only `tools/author.py` (re-sealing scenarios) and the C3 report generation
@@ -120,9 +121,8 @@ uv run python -m surface_bench.oracle results/<ts>
 (`trials`, `temperature`, `max_tokens`, `mode`, `max_turns`, and a `[models.<name>]` block per
 model with `provider`, `model_id`, and `input_per_mtok` / `output_per_mtok` pricing).
 
-**Providers:** `provider = "mock" | "anthropic"` today; OpenAI and Gemini adapters are planned
-(#107). Mock needs no key and is the offline workhorse; in `--mode multi` it scripts a canned answer
-so the whole loop runs for free.
+**Providers:** `provider = "mock" | "anthropic" | "openai" | "gemini"`. Mock needs no key and is the
+offline workhorse; in `--mode multi` it scripts a canned answer so the whole loop runs for free.
 
 ### The matrix size (and why you stage spend)
 
@@ -199,7 +199,7 @@ outputs.
     run.py                   the matrix runner (single + multi); writes raw.jsonl + run.json
     prompts.py               assembles (system, user) per condition; hides hidden_paths
     models.py                provider adapters: complete() (single) + step() (multi, tool-use);
-                             Anthropic + Mock (OpenAI/Gemini planned, #107); neutral Step/ToolCall types
+                             Anthropic / OpenAI / Gemini + Mock; neutral Step/ToolCall types
     agent.py                 run_agent() — the multi-turn loop over the read-only tools
     tools_runtime.py         read-only tool surface (read_file/grep/list_dir/final_answer) + sandbox
     grade_qa.py              VERDICT-line rubric grader (QA)
