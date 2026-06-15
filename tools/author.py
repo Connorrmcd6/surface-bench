@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -28,17 +29,23 @@ import tomllib
 from pathlib import Path
 
 BENCH_ROOT = Path(__file__).resolve().parent.parent
-REPO_ROOT = BENCH_ROOT.parent
 
 
 def find_surf() -> str:
-    for cand in (REPO_ROOT / "target/release/surf", REPO_ROOT / "target/debug/surf"):
-        if cand.exists():
-            return str(cand)
+    """Locate the `surf` binary: $SURF_BIN, then PATH, then a vendored ./bin/surf."""
+    env = os.environ.get("SURF_BIN")
+    if env and Path(env).exists():
+        return env
     found = shutil.which("surf")
     if found:
         return found
-    sys.exit("could not find a `surf` binary (build it: cargo build --release)")
+    local = BENCH_ROOT / "bin" / "surf"
+    if local.exists():
+        return str(local)
+    sys.exit(
+        "could not find a `surf` binary. Install it (see README 'Install surf') or set "
+        "$SURF_BIN to its path."
+    )
 
 
 def _seal(surf: str, workdir: Path) -> None:

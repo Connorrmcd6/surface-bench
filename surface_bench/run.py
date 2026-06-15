@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import shutil
 import subprocess
 import sys
 import time
@@ -29,11 +31,10 @@ BENCH_ROOT = Path(__file__).resolve().parent.parent
 
 
 def _surf_version() -> str:
-    for cand in ("target/release/surf", "target/debug/surf"):
-        p = BENCH_ROOT.parent / cand
-        if p.exists():
-            out = subprocess.run([str(p), "--version"], capture_output=True, text=True)
-            return out.stdout.strip()
+    surf = os.environ.get("SURF_BIN") or shutil.which("surf")
+    if surf and Path(surf).exists():
+        out = subprocess.run([surf, "--version"], capture_output=True, text=True)
+        return out.stdout.strip()
     return "unknown"
 
 

@@ -1,7 +1,7 @@
 # surface-bench — operator manual
 
 Empirically measuring how much **documentation accuracy** changes an agent's task performance — the
-gap [Surface](../README.md) exists to protect. Surface doesn't make an agent smarter; it stops docs
+gap [Surface](https://github.com/Connorrmcd6/surface) exists to protect. Surface doesn't make an agent smarter; it stops docs
 silently rotting. So its value to an agent equals the performance delta between working from **fresh**
 docs and **rotted** docs, plus whether *surfacing* the drift recovers the loss. This bench measures
 those deltas directly, using drift of exactly the kind `surf check` catches (flipped operators,
@@ -9,8 +9,8 @@ dropped guards, changed constants, reordered keys).
 
 This is the single place to start when you (or a future agent) pick this up cold. It covers **what the
 experiment is, how to run it, how to read the results, how to author scenarios, and the sharp edges.**
-Lives in the Surface repo but has no inbound dependency on the Rust core — it only *consumes* the
-`surf` binary's output — so it can be extracted later.
+This is a standalone repo; it has no dependency on the [Surface](https://github.com/Connorrmcd6/surface)
+Rust core — it only *consumes* the `surf` binary's output.
 
 > **Companion docs:** [`PREREGISTRATION.md`](PREREGISTRATION.md) (the frozen hypotheses + analysis
 > plan for the headline run), [`ABC_CHECKLIST.md`](ABC_CHECKLIST.md) (benchmark-rigor self-audit),
@@ -70,14 +70,19 @@ the spend figures are reproducible). Code-edit graders run under the *same* inte
 selects — no `python3`-on-PATH guessing.
 
 ```sh
-# from repo root: build the real surf binary (author.py + the C3 report need it)
-cargo build --release                       # provides target/release/surf
-
-cd bench
 uv sync                                      # base deps (anthropic)
 uv sync --extra dev                          # + pytest (to run the test suite)
 uv sync --extra plots                        # + matplotlib (report figures)
-uv sync --extra providers                    # + openai, google-genai (cross-provider runs)
+```
+
+**Install `surf`** — only `tools/author.py` (re-sealing scenarios) and the C3 report generation
+need the `surf` binary; running the matrix, grading, and reporting do **not**. Put it on PATH (or
+point `$SURF_BIN` at it):
+
+```sh
+cargo install --git https://github.com/Connorrmcd6/surface surf-cli   # builds + installs `surf`
+# or download a release binary from https://github.com/Connorrmcd6/surface/releases
+# the bench finds it via: $SURF_BIN -> `surf` on PATH -> ./bin/surf
 ```
 
 **Toolchains the graders need at run time** (only when those scenarios are actually graded):
@@ -115,8 +120,9 @@ uv run python -m surface_bench.oracle results/<ts>
 (`trials`, `temperature`, `max_tokens`, `mode`, `max_turns`, and a `[models.<name>]` block per
 model with `provider`, `model_id`, and `input_per_mtok` / `output_per_mtok` pricing).
 
-**Providers:** `provider = "mock" | "anthropic" | "openai" | "gemini"`. Mock needs no key and is the
-offline workhorse; in `--mode multi` it scripts a canned answer so the whole loop runs for free.
+**Providers:** `provider = "mock" | "anthropic"` today; OpenAI and Gemini adapters are planned
+(#107). Mock needs no key and is the offline workhorse; in `--mode multi` it scripts a canned answer
+so the whole loop runs for free.
 
 ### The matrix size (and why you stage spend)
 
@@ -185,7 +191,7 @@ outputs.
 ## 6. Layout
 
 ```
-bench/
+.                            (repo root)
   config.toml                models, trials, temperature, mode, max_turns, per-model pricing
   PREREGISTRATION.md         frozen hypotheses + analysis plan for the headline run
   ABC_CHECKLIST.md           benchmark-rigor self-audit (arXiv 2507.02825)
@@ -193,7 +199,7 @@ bench/
     run.py                   the matrix runner (single + multi); writes raw.jsonl + run.json
     prompts.py               assembles (system, user) per condition; hides hidden_paths
     models.py                provider adapters: complete() (single) + step() (multi, tool-use);
-                             Anthropic / OpenAI / Gemini + Mock; neutral Step/ToolCall types
+                             Anthropic + Mock (OpenAI/Gemini planned, #107); neutral Step/ToolCall types
     agent.py                 run_agent() — the multi-turn loop over the read-only tools
     tools_runtime.py         read-only tool surface (read_file/grep/list_dir/final_answer) + sandbox
     grade_qa.py              VERDICT-line rubric grader (QA)
@@ -265,5 +271,5 @@ A cascade scenario clones `scenarios/cascade-quota-batcher-code/`. The loop:
 `uv.lock` pins the Python env. `run.json` records every parameter (models + ids, trials,
 temperature, max_tokens, mode, max_turns, conditions, scenarios, `surf --version`). `raw.jsonl`
 preserves raw outputs so grading/metrics re-run offline. To reproduce a committed snapshot, check out
-the repo at its tag, `cargo build --release`, `cd bench && uv sync`, and re-run `report` on the
-snapshot dir (it regenerates `summary.json` + figures from the frozen `raw.jsonl`).
+the repo at its tag, `uv sync`, and re-run `report` on the snapshot dir (it regenerates
+`summary.json` + figures from the frozen `raw.jsonl`).
