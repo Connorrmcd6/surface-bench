@@ -187,8 +187,10 @@ cross-check. The report also slices deltas **by tier** (the difficulty gradient)
 
 **`report.md` sections:** Spend · the gradient (C2−C1 by tier) · **Verification** (multi: the H4
 deltas + H5 mediation) · per-model rate tables + deltas (with Holm flags) · output-token tables +
-deltas · per-scenario success. **Figures:** `overview.png`, `cascade_success.png`, and (multi)
-`verification_rate.png` — the "does a stale doc stop the agent checking?" hero chart.
+deltas · per-scenario success. **Figures** (all from the frozen `summary.json`, with 95% Wilson CIs):
+`cascade_success.png`, `misled_rate.png`, `cost_accuracy.png` (the cost–accuracy frontier — fresh docs
+are cheapest *and* most accurate), and (multi) `verification_rate.png` — the "does a stale doc stop the
+agent checking?" hero chart.
 
 ---
 

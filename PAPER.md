@@ -468,6 +468,10 @@ every model — **including opus and gpt**, the most capable systems tested. Fre
 94–100%. The pattern of the single-shot pilot survives intact in the agentic setting, where the agent
 could have verified.
 
+![Cascade success by condition and model, with 95% Wilson CIs: stale docs (C1) collapse accuracy on every model; fresh docs (C2) and the Surface report (C3) restore it.](results/confirmatory-20260616T172420Z/cascade_success.png)
+
+![Misled rate by condition and model, with 95% Wilson CIs: with no doc the agent is rarely misled, but a stale doc misleads the majority on every model.](results/confirmatory-20260616T172420Z/misled_rate.png)
+
 ### 6.3 Verification rate — per model × condition (cascade, multi only)
 
 Fraction of trials that read the hidden dependency before answering [95% Wilson]; `v→ok` = success
@@ -480,6 +484,8 @@ among C1 verifiers (H5's validity check).
 | opus   | 100% [97–100] | 33% [26–42] | 38% | 29% | 87% | 95% |
 | gpt    | 96% [91–98]   | **0% [0–3]**  | 2%  | 23% | 9%  | n/a (no verifiers) |
 | gemini | 100% [97–100] | **85% [77–90]** | 74% | 100% | 100% | 20% |
+
+![Verification rate by condition and model, with 95% Wilson CIs: with no doc every model reads the hidden dependency ~100% of the time; a stale doc (C1) suppresses that check sharply for gpt and the Claude models, only mildly for gemini.](results/confirmatory-20260616T172420Z/verification_rate.png)
 
 **H4 (verification suppression, C0 − C1) is significant on every model** but spans an order of
 magnitude: gpt **+96 pp** [+92, +99], sonnet +80 pp [+73, +86], haiku +77 pp [+69, +84], opus
@@ -557,23 +563,41 @@ the marginal value of *accurate prose over no doc* (C2 − C0) is small but posi
 (+5 to +18 pp), Holm-significant for gpt/haiku/sonnet and not for gemini/opus — i.e. most of Surface's
 value is in *removing rot*, not in adding prose a capable agent could derive itself.
 
-### 6.7 Token cost (exploratory)
+### 6.7 Cost and accuracy — fresh docs are the cheapest *and* most accurate (exploratory)
 
-Output-token deltas (mean, 95% bootstrap CI):
+Success rate alone makes no-docs (C0) and fresh-docs (C2) look like comparable options — both are
+mostly correct. **Total cost per task tells a different story: C2 strictly dominates C0** — equal or
+better accuracy at lower cost on four of five models (≈ tied on gemini). Per 1,000 tasks (total spend,
+including input tokens, at the prices in `run.json`):
 
-| Model | C1 − C2 (stale vs fresh) | C1 − C0 (stale vs none) | C1 − C3 (stale vs +report) |
+| Model | No docs (C0) | Fresh docs (C2) | C2 vs C0 |
 |---|---|---|---|
-| haiku  | +33 [−22, +90] | **−162** [−218, −103] | **−175** [−230, −118] |
-| sonnet | **+47** [+11, +85] | **−52** [−90, −12] | −17 [−63, +28] |
-| opus   | +48 [−29, +125] | **−200** [−269, −127] | **−174** [−266, −81] |
-| gpt    | −3 [−20, +14] | **−98** [−116, −79] | −18 [−36, +0] |
-| gemini | **+86** [+42, +131] | +29 [−21, +81] | **−51** [−101, −1] |
+| haiku  | 78% · $11.0 | **96% · $6.1** | +18 pp, **−45% cost** |
+| sonnet | 94% · $27.8 | **100% · $16.8** | +6 pp, **−40% cost** |
+| opus   | 91% · $59.3 | **95% · $31.8** | +4 pp, **−46% cost** |
+| gpt    | 95% · $11.8 | **100% · $7.6** | +5 pp, **−36% cost** |
+| gemini | 88% · $11.3 | 94% · $11.8 | +6 pp, ≈ flat |
 
-The pilot's "rot you can't see makes you *cheaply* wrong" pattern recurs: on four of five models C1
-spends *fewer* output tokens than C0 (the stale doc lets the model commit immediately instead of
-deliberating about the unseen dependency), and recovery (C3) is dearer than the error (C1). Gemini is
-the lone exception (C1 − C0 ≈ 0): consistent with §6.3, it keeps verifying under the stale doc rather
-than committing cheaply — it simply ignores what it finds.
+![Cost vs accuracy per model. Fresh docs (★) sit top-left — most accurate and (on 4/5 models) cheapest. No-docs is correct but pushed right (pricier); stale/warning fall low. Cost is total $ per 1,000 tasks; top-left is ideal.](results/confirmatory-20260616T172420Z/cost_accuracy.png)
+
+**Why no-docs costs more.** With no doc, the agent pays a *rediscovery tax*: it opens the hidden
+dependency in ~100% of trials (§6.3), which roughly **doubles input tokens** (e.g. haiku 7,170 → 3,299;
+opus 7,803 → 3,562) as the file and the growing transcript re-enter context turn after turn. A fresh
+doc simply *states* the fact, so the agent skips the read-and-verify loop. The fresh doc's own input
+cost is small change against the reads it avoids. (Gemini is the exception — it reads the dependency
+regardless, so the doc is near-pure added input cost there, yet still buys +6 pp accuracy.)
+
+So the practical takeaway answers the obvious "why bother with docs if no-docs works?": **no-docs is the
+most expensive way to be correct**, and only as accurate as it is *because the hidden code happened to
+be reachable* (in §5's single-shot setting, where it is not, no-docs collapses with the rest). The
+realistic choice is never "no docs vs fresh docs" but **stale docs vs fresh docs** — and that is the
+contrast Surface governs.
+
+For completeness, the behavioural output-token signal (mean, 95% bootstrap CI): on four of five models
+C1 spends *fewer* output tokens than C0 (a stale doc lets the model commit immediately instead of
+deliberating about the unseen dependency), e.g. C1 − C0 = −162 [−218, −103] (haiku), −200 [−269, −127]
+(opus), −98 [−116, −79] (gpt); gemini is again the exception (+29 [−21, +81]) because it keeps
+verifying under the stale doc and merely ignores what it finds.
 
 ---
 
@@ -664,6 +688,35 @@ token line. **The ROI is dominated by avoided wrong work, not token savings**, a
 often agents act on documentation they cannot independently verify. *Measured here:* the 100%/≈0%
 failure rates and the token deltas. *Supplied by the reader:* task volume, exposure share, and
 remediation cost.
+
+### 7.6 "Why keep docs at all, if no-docs scores well?"
+
+A fair reading of §6.2 is that no-docs (C0) already scores 78–95% — so why pay for documentation, let
+alone a tool to keep it fresh? Three things resolve the apparent paradox.
+
+**No-docs is the most expensive way to be correct.** §6.7 shows fresh docs *dominate* no-docs:
+equal-or-better accuracy at **36–46% lower total cost** on four of five models. Stripped of a doc, the
+agent rediscovers the hidden dependency itself — verifying ~100% of the time and roughly doubling input
+tokens. Judging C0 and C2 by success rate alone hides that C2 gets there cheaper; on a cost–accuracy
+plot C2 is Pareto-dominant and C0 is simply inside the frontier.
+
+**No-docs only looks safe because the code was reachable.** Our multi-turn sandbox *contains* the
+hidden dependency, so a diligent agent can open it. Real large codebases routinely fail that
+assumption — the implementing file is behind an interface, in another service, or outside the context
+budget. That is exactly the §5 single-shot regime, where no-docs collapses to the floor along with
+stale docs. C0's strong showing here is an upper bound that production rarely affords.
+
+**The real-world choice is stale vs fresh, not none vs fresh.** Teams do not operate doc-free; they
+operate with docs that *drift*. The operative comparison is therefore C1 (catastrophic: 68–100% misled)
+against C2 — and closing that gap is precisely what a drift gate does.
+
+**And documentation is not only for the agent.** This benchmark scores a model, but docs are read by
+people — for onboarding, code review, design rationale, and incident response — value that no-docs
+forfeits entirely and that stale docs actively corrupt. Keeping docs accurate is thus doubly justified:
+it is the cost-accuracy optimum for the agent *and* the substrate humans rely on to understand the
+system. The contribution of a tool like Surface is to make "fresh" the steady state rather than a
+brief condition right after someone last hand-checked the prose — so both readers, human and machine,
+can trust it.
 
 ---
 

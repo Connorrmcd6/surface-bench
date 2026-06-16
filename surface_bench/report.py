@@ -202,14 +202,74 @@ def render_markdown(summary: dict) -> str:
     return "\n".join(lines)
 
 
-def maybe_plot(summary: dict, out_dir: Path) -> None:
-    """Render standalone-readable figures.
+# --- Figure styling --------------------------------------------------------------------------
+# Figures are rendered from the summary dict (the same Wilson/bootstrap stats the report tabulates),
+# so they are faithful to the reported numbers. Honesty guards: rate charts use a zero baseline,
+# every rate carries its 95% CI as error bars, no cell is dropped, and the legend sits outside the
+# plot so it never overlaps bars.
+_MODEL_ORDER = ["haiku", "sonnet", "opus", "gpt", "gemini"]
+_PROVIDER = {"haiku": "Anthropic", "sonnet": "Anthropic", "opus": "Anthropic",
+             "gpt": "OpenAI", "gemini": "Google"}
+_COLOR = {"haiku": "#6BAED6", "sonnet": "#3182BD", "opus": "#08519C",
+          "gpt": "#E6550D", "gemini": "#31A354"}
+_COND_ORDER = ["C0", "C1", "C2", "C3", "Cw"]
+_COND_LABEL = {"C0": "No docs", "C1": "Stale\ndocs", "C2": "Fresh docs\n(Surface)",
+               "C3": "Stale +\nSurface report", "Cw": "Stale +\nwarning"}
 
-    The story splits by family, so we plot the families separately rather than averaging them
-    (which would dilute the cascade effect under the comprehension ceiling): cascade scenarios on
-    *success* (where rot breaks the agent) and comprehension scenarios on *output tokens* (where rot
-    just taxes generation). Plain-English condition labels, value annotations, and self-explanatory
-    titles, so the charts make sense without the report. Re-reads raw.jsonl for the per-family split.
+
+def _order_models(summary):
+    present = set(summary["models"])
+    return [m for m in _MODEL_ORDER if m in present] + sorted(present - set(_MODEL_ORDER))
+
+
+def _style(ax):
+    ax.grid(axis="y", alpha=0.25, linewidth=0.6)
+    ax.set_axisbelow(True)
+    for sp in ("top", "right"):
+        ax.spines[sp].set_visible(False)
+
+
+def _legend(ax, models):
+    from matplotlib.lines import Line2D
+
+    handles = [Line2D([0], [0], marker="s", linestyle="", markersize=8, color=_COLOR.get(m, "#888"),
+                      label=f"{m} ({_PROVIDER.get(m, '?')})") for m in models]
+    ax.legend(handles=handles, fontsize=8, frameon=False, title="model", title_fontsize=8,
+              loc="upper left", bbox_to_anchor=(1.01, 1.0), borderaxespad=0)
+
+
+def _grouped_rate(ax, summary, models, field, ci_field, source, ylabel, title):
+    conds = [c for c in _COND_ORDER if c in summary["conditions"]]
+    n = len(models)
+    width = 0.8 / max(n, 1)
+    for i, m in enumerate(models):
+        vals, errs, offs = [], [[], []], []
+        for j, c in enumerate(conds):
+            cell = summary[source][m][c]
+            v = 100 * cell[field]
+            lo, hi = (100 * x for x in cell[ci_field])
+            vals.append(v)
+            errs[0].append(max(0.0, v - lo))
+            errs[1].append(max(0.0, hi - v))
+            offs.append(j + (i - (n - 1) / 2) * width)
+        ax.bar(offs, vals, width=width, color=_COLOR.get(m, "#888"), label=m,
+               edgecolor="white", linewidth=0.5, zorder=2)
+        ax.errorbar(offs, vals, yerr=errs, fmt="none", ecolor="#333", elinewidth=0.8,
+                    capsize=2, zorder=3)
+    ax.set_xticks(range(len(conds)))
+    ax.set_xticklabels([_COND_LABEL.get(c, c) for c in conds], fontsize=8)
+    ax.set_ylim(0, 108)
+    ax.set_ylabel(ylabel, fontsize=9)
+    ax.set_title(title, fontsize=10)
+    _style(ax)
+
+
+def maybe_plot(summary: dict, out_dir: Path) -> None:
+    """Render standalone-readable figures from the summary (no re-reading raw.jsonl).
+
+    Always: cascade success, misled rate, and a pre-registered effects forest. Multi-turn only
+    (guarded on the verification/mediation summary blocks): the verification-rate chart, the
+    three-failure-modes scatter, and the H5 mediation chart.
     """
     try:
         import matplotlib
@@ -218,118 +278,87 @@ def maybe_plot(summary: dict, out_dir: Path) -> None:
         import matplotlib.pyplot as plt
     except ImportError:
         return
-    import statistics
 
-    raw = out_dir / "raw.jsonl"
-    if not raw.exists():
-        return
-    rows = [json.loads(l) for l in raw.read_text().splitlines() if l.strip()]
-    # Order models by capability (small → large) so "a bigger model doesn't help" reads left→right;
-    # unknown names fall back to alphabetical after the known ones.
-    rank = {"haiku": 0, "sonnet": 1, "opus": 2}
-    models = sorted(summary["models"], key=lambda m: (rank.get(m, 99), m))
-    conds = [c for c in ("C0", "C1", "C2", "C3", "Cw") if c in summary["conditions"]]
-    label = {
-        "C0": "No docs",
-        "C1": "Stale docs",
-        "C2": "Fresh docs\n(Surface)",
-        "C3": "Stale docs +\nSurface report",
-        "Cw": "Stale docs +\nstaleness warning",
-    }
-    palette = ["#4C72B0", "#DD8452", "#55A868", "#C44E52", "#8172B3"]
-    color = {m: palette[i % len(palette)] for i, m in enumerate(models)}
-
-    casc = [r for r in rows if r["scenario"].startswith("cascade-")]
-    comp = [r for r in rows if not r["scenario"].startswith("cascade-")]
-
-    def cell(sub, m, c):
-        return [r for r in sub if r["model"] == m and r["condition"] == c]
-
-    def succ_pct(sub, m, c):
-        x = cell(sub, m, c)
-        return 100 * sum(bool(r["ok"]) for r in x) / len(x) if x else 0.0
-
-    def mean_out(sub, m, c):
-        x = [r["output_tokens"] for r in cell(sub, m, c) if r.get("output_tokens") is not None]
-        return statistics.mean(x) if x else 0.0
-
-    def grouped(ax, sub, valfn, ylabel, *, ymax=None, fmt="{:.0f}"):
-        n = len(models)
-        width = 0.8 / max(n, 1)
-        for i, m in enumerate(models):
-            vals = [valfn(sub, m, c) for c in conds]
-            offs = [j + (i - (n - 1) / 2) * width for j in range(len(conds))]
-            ax.bar(offs, vals, width=width, color=color[m], label=m, edgecolor="white", linewidth=0.5)
-            top = ymax or (max(vals) if vals else 1) or 1
-            for off, v in zip(offs, vals):
-                ax.text(off, v + top * 0.012, fmt.format(v), ha="center", va="bottom", fontsize=7)
-        ax.set_xticks(range(len(conds)))
-        ax.set_xticklabels([label.get(c, c) for c in conds], fontsize=8)
-        ax.set_ylabel(ylabel, fontsize=9)
-        if ymax:
-            ax.set_ylim(0, ymax)
-        ax.grid(axis="y", alpha=0.25, linewidth=0.6)
-        ax.set_axisbelow(True)
-        for sp in ("top", "right"):
-            ax.spines[sp].set_visible(False)
-
-    panels = [("casc", casc)] * bool(casc) + [("comp", comp)] * bool(comp)
-    if not panels:
+    models = _order_models(summary)
+    if not models or not summary.get("rates"):
         return
 
-    # Combined overview (one panel per non-empty family).
-    fig, axes = plt.subplots(1, len(panels), figsize=(5.6 * len(panels), 4.3))
-    axes = [axes] if len(panels) == 1 else list(axes)
-    for ax, (kind, sub) in zip(axes, panels):
-        if kind == "casc":
-            grouped(ax, sub, succ_pct, "Tasks the agent got right (%)", ymax=108, fmt="{:.0f}%")
-            ax.set_title(
-                "Code HIDDEN — agent must trust the doc\nStale docs break every model; "
-                "fresh docs & the Surface report fix it",
-                fontsize=9.5,
-            )
-        else:
-            grouped(ax, sub, mean_out, "Avg tokens the agent wrote")
-            ax.set_title(
-                "Code VISIBLE — agent can check it\nRot doesn't cause errors, but costs extra tokens",
-                fontsize=9.5,
-            )
-    axes[0].legend(title="model", fontsize=8, title_fontsize=8, frameon=False, loc="upper left")
-    fig.suptitle("Does stale documentation hurt a coding agent?", fontsize=13, fontweight="bold")
-    fig.tight_layout(rect=(0, 0, 1, 0.97))
-    fig.savefig(out_dir / "overview.png", dpi=150, bbox_inches="tight")
+    # 1. Cascade success (hero).
+    fig, ax = plt.subplots(figsize=(8.5, 4.6))
+    _grouped_rate(ax, summary, models, "success", "success_ci", "rates",
+                  "Tasks solved correctly (%)",
+                  "Coding accuracy when the agent can't see the code it depends on\n"
+                  "A stale doc breaks every model; fresh docs or Surface's report restore it "
+                  "(bars = 95% Wilson CI)")
+    _legend(ax, models)
+    fig.tight_layout()
+    fig.savefig(out_dir / "cascade_success.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
 
-    # Standalone hero: the cascade success chart (the single most quotable figure).
-    if casc:
-        fig, ax = plt.subplots(figsize=(6.6, 4.3))
-        grouped(ax, casc, succ_pct, "Tasks the agent got right (%)", ymax=108, fmt="{:.0f}%")
-        ax.legend(title="model", fontsize=8, title_fontsize=8, frameon=False, loc="upper left")
-        ax.set_title(
-            "Coding accuracy when the agent can't see the code it depends on\n"
-            "A stale doc breaks every model (a bigger model doesn't help); "
-            "fresh docs or Surface's drift report restore it",
-            fontsize=9.5,
-        )
-        fig.tight_layout()
-        fig.savefig(out_dir / "cascade_success.png", dpi=150, bbox_inches="tight")
+    # 2. Misled rate (H2 — rot is worse than nothing).
+    fig, ax = plt.subplots(figsize=(8.5, 4.6))
+    _grouped_rate(ax, summary, models, "misled", "misled_ci", "rates",
+                  "Tasks where the agent asserted the STALE claim (%)",
+                  "Rot is worse than nothing: a stale doc actively misleads\n"
+                  "With no doc the agent is rarely misled; a stale doc misleads the majority "
+                  "(bars = 95% Wilson CI)")
+    _legend(ax, models)
+    fig.tight_layout()
+    fig.savefig(out_dir / "misled_rate.png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
+
+    # 3. Cost vs accuracy — fresh docs are the cost-accuracy optimum (per model; cost from raw $).
+    # Answers "why have docs if no-docs scores well?": no-docs is correct but the priciest way to be,
+    # because the agent pays to rediscover the hidden dependency. C2 sits top-left (best) in each panel.
+    raw_path = out_dir / "raw.jsonl"
+    if raw_path.exists():
+        import statistics
+
+        rows = [json.loads(l) for l in raw_path.read_text().splitlines() if l.strip()]
+        conds = [c for c in _COND_ORDER if c in summary["conditions"]]
+        ccolor = {"C0": "#7F7F7F", "C1": "#C44E52", "C2": "#2CA02C", "C3": "#3182BD", "Cw": "#E6845E"}
+        clabel = {"C0": "no docs", "C1": "stale", "C2": "fresh", "C3": "+report", "Cw": "+warning"}
+        n = len(models)
+        fig, axes = plt.subplots(1, n, figsize=(3.05 * n, 3.6), squeeze=False)
+        for ax, m in zip(axes[0], models):
+            for c in conds:
+                cells = [r for r in rows if r["model"] == m and r["condition"] == c]
+                if not cells:
+                    continue
+                cost = 1000 * statistics.mean(r["cost_usd"] for r in cells)  # $ per 1,000 tasks
+                succ = 100 * summary["rates"][m][c]["success"]
+                hi = c == "C2"
+                ax.scatter([cost], [succ], s=170 if hi else 70, color=ccolor.get(c, "#888"),
+                           marker="*" if hi else "o", edgecolor="black" if hi else "white",
+                           linewidth=1.2 if hi else 0.6, zorder=3)
+                ax.annotate(clabel.get(c, c), (cost, succ), textcoords="offset points",
+                            xytext=(6, 4), fontsize=7.5, fontweight="bold" if hi else "normal")
+            ax.set_title(f"{m} ({_PROVIDER.get(m, '?')})", fontsize=9)
+            ax.set_xlabel("Cost per 1,000 tasks ($)", fontsize=8)
+            ax.set_ylim(-6, 108)
+            ax.margins(x=0.25)
+            _style(ax)
+        axes[0][0].set_ylabel("Tasks solved correctly (%)", fontsize=9)
+        fig.suptitle("Fresh docs (★) are the cost–accuracy optimum: most accurate AND cheapest\n"
+                     "No-docs is correct but pricier — the agent pays to rediscover the hidden "
+                     "dependency (top-left = ideal)", fontsize=11, fontweight="bold")
+        fig.tight_layout(rect=(0, 0, 1, 0.9))
+        fig.savefig(out_dir / "cost_accuracy.png", dpi=150, bbox_inches="tight")
         plt.close(fig)
 
-    # Verification hero (multi-turn only): does a confident stale doc stop the agent checking?
-    if casc and any("verified_hidden" in r for r in rows):
+    # Multi-turn figures (only when verification was measured).
+    ver = summary.get("verification") or {}
+    has_ver = bool(ver) and all("C1" in ver.get(m, {}) for m in models)
 
-        def ver_pct(sub, m, c):
-            x = [r for r in cell(sub, m, c) if "verified_hidden" in r]
-            return 100 * sum(bool(r["verified_hidden"]) for r in x) / len(x) if x else 0.0
-
-        fig, ax = plt.subplots(figsize=(6.6, 4.3))
-        grouped(ax, casc, ver_pct, "Agent read the hidden dependency (%)", ymax=108, fmt="{:.0f}%")
-        ax.legend(title="model", fontsize=8, title_fontsize=8, frameon=False, loc="upper right")
-        ax.set_title(
-            "Does a confident (stale) doc stop the agent verifying?\n"
-            "With no doc the agent reads the hidden code; a stale doc suppresses the check",
-            fontsize=9.5,
-        )
+    if has_ver:
+        # 4. Verification rate (H4 hero).
+        fig, ax = plt.subplots(figsize=(8.5, 4.6))
+        _grouped_rate(ax, summary, models, "verification_rate", "verification_ci", "verification",
+                      "Agent read the hidden dependency (%)",
+                      "Does a confident (stale) doc stop the agent verifying?\n"
+                      "With no doc every model checks the hidden code; a stale doc suppresses it "
+                      "(bars = 95% Wilson CI)")
+        _legend(ax, models)
         fig.tight_layout()
         fig.savefig(out_dir / "verification_rate.png", dpi=150, bbox_inches="tight")
         plt.close(fig)
