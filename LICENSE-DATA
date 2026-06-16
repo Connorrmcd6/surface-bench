@@ -1,0 +1,62 @@
+Creative Commons Attribution 4.0 International (CC BY 4.0)
+
+============================================================================
+SCOPE
+============================================================================
+
+This license covers the DATASET and written research artifacts in this
+repository:
+
+  - results/        (raw.jsonl, summary.json, run.json, report.md, figures,
+                     PROVENANCE.md — every committed snapshot)
+  - scenarios/      (fixtures, hubs, graders, reference solutions, meta.toml)
+  - PAPER.md, PREREGISTRATION.md, ABC_CHECKLIST.md, DATASET.md, analysis/
+
+The benchmark SOFTWARE (surface_bench/, tools/, tests/, pyproject.toml,
+uv.lock) is licensed separately under the MIT License; see `LICENSE`.
+
+The `surf` binary is an external tool consumed at runtime; it is not
+redistributed here and is not covered by this license.
+
+============================================================================
+LICENSE
+============================================================================
+
+These materials are licensed under the Creative Commons Attribution 4.0
+International License (CC BY 4.0).
+
+You are free to:
+
+  - Share — copy and redistribute the material in any medium or format.
+  - Adapt — remix, transform, and build upon the material for any purpose,
+    even commercially.
+
+Under the following terms:
+
+  - Attribution — You must give appropriate credit, provide a link to the
+    license, and indicate if changes were made. You may do so in any
+    reasonable manner, but not in any way that suggests the licensor endorses
+    you or your use.
+  - No additional restrictions — You may not apply legal terms or
+    technological measures that legally restrict others from doing anything
+    the license permits.
+
+The above is a human-readable summary of (and not a substitute for) the
+license. The full, authoritative legal text is published by Creative Commons
+and is incorporated here by reference:
+
+  Legal code: https://creativecommons.org/licenses/by/4.0/legalcode
+  Deed:       https://creativecommons.org/licenses/by/4.0/
+
+============================================================================
+HOW TO ATTRIBUTE
+============================================================================
+
+When reusing this dataset, please cite it as:
+
+  Connor McDonald (2026). "surface-bench: a pre-registered, provider-agnostic
+  benchmark of documentation drift in LLM coding agents." Dataset, CC BY 4.0.
+  https://github.com/Connorrmcd6/surface-bench
+
+A machine-readable citation is provided in `CITATION.cff`. If a DOI has been
+minted (see DATASET.md), please cite that DOI.

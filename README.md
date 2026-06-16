@@ -273,3 +273,27 @@ temperature, max_tokens, mode, max_turns, conditions, scenarios, `surf --version
 preserves raw outputs so grading/metrics re-run offline. To reproduce a committed snapshot, check out
 the repo at its tag, `uv sync`, and re-run `report` on the snapshot dir (it regenerates
 `summary.json` + figures from the frozen `raw.jsonl`).
+
+---
+
+## 10. License, citation & disclosures
+
+**License (dual).** The benchmark **software** — `surface_bench/`, `tools/`, `tests/`,
+`pyproject.toml`, `uv.lock` — is released under the **MIT License** ([`LICENSE`](LICENSE)). The
+**dataset and research artifacts** — `results/`, `scenarios/`, and the written docs (`PAPER.md`,
+`PREREGISTRATION.md`, `ABC_CHECKLIST.md`, `DATASET.md`, `analysis/`) — are released under
+**CC BY 4.0** ([`LICENSE-DATA`](LICENSE-DATA)): reuse freely, including commercially, with attribution.
+
+**Using the data.** Start with [`DATASET.md`](DATASET.md) — it documents the released snapshots, the
+`raw.jsonl` schema, and how to load and regenerate the metrics offline.
+
+**Citation.** Citation metadata is in [`CITATION.cff`](CITATION.cff) (GitHub shows a "Cite this
+repository" button). To mint a permanent DOI, archive a GitHub Release via Zenodo (see `DATASET.md`).
+
+**Funding & independence.** This study received **no external or institutional funding**; it was
+conducted independently and **self-funded** by the author to empirically validate Surface. "Independent"
+here means free of outside sponsors — **not** disinterested: the author also authors
+[Surface](https://github.com/Connorrmcd6/surface), the tool this benchmark measures, which is a
+declared competing interest. That conflict is mitigated by the study's design — pre-registration,
+fully deterministic grading (no LLM judge), released raw per-call data, and the fact that a negative
+result on any hypothesis is reportable (see `PAPER.md` §9).

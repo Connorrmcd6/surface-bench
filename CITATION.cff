@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+title: >-
+  surface-bench: a pre-registered, provider-agnostic benchmark of
+  documentation drift in LLM coding agents
+message: >-
+  If you use this dataset or benchmark, please cite it using the
+  metadata below.
+type: dataset
+authors:
+  - family-names: McDonald
+    given-names: Connor
+repository-code: "https://github.com/Connorrmcd6/surface-bench"
+url: "https://github.com/Connorrmcd6/surface-bench"
+abstract: >-
+  A controlled, single-variable benchmark measuring how documentation
+  accuracy changes an LLM coding agent's task performance, and through
+  what mechanism. Documentation accuracy is the only manipulated variable
+  across five matched conditions (code only; code + stale doc; code + fresh
+  doc; code + stale doc + an automated drift report; code + stale doc + a
+  generic warning), with fully deterministic grading and no LLM judge. The
+  release includes a single-shot pilot (3 Claude models; 1,320 graded
+  completions) and a pre-registered confirmatory multi-turn matrix (5 models
+  across Anthropic, OpenAI, and Google; 3,250 graded completions).
+keywords:
+  - LLM agents
+  - documentation drift
+  - context rot
+  - agentic benchmark
+  - pre-registration
+  - coding agents
+license: CC-BY-4.0
+version: "1.0.0"
+date-released: "2026-06-16"
+# doi: 10.5281/zenodo.XXXXXXX   # uncomment and fill after minting a Zenodo DOI (see DATASET.md)

@@ -29,7 +29,7 @@ code + a stale doc; code + a fresh doc; code + a stale doc plus an automated dri
 a stale doc plus a generic "may be outdated" warning), holding the code, task, model, and sampling
 fixed. Grading is fully deterministic — hidden unit tests for code-edit tasks and a fixed-format
 verdict rubric for question-answering tasks — with **no LLM judge**. The benchmark is built to the
-Agentic Benchmark Checklist (ABC; Zhu et al., 2025) -- [# where is the link?] and is pre-registered to forestall HARKing and
+Agentic Benchmark Checklist (ABC; Zhu et al., 2025) and is pre-registered to forestall HARKing and
 analysis cherry-picking.
 
 In a **single-shot pilot** (3 Claude models, 4 conditions, 1,320 graded completions, 0 errors), when
@@ -65,8 +65,8 @@ describing the world as it was. Human engineers tolerate this because they routi
 and re-read code. LLM coding agents are different in two ways that make drift more dangerous, not
 less:
 
-1. **They consume docs as ground truth.** A doc placed in context is, to a model, just more authoritative-looking text. Absent a reason to doubt it, the model will act on it. -- [# how do you know?]
-2. **They often cannot see the relevant code.** In a real repository the file that actually implements a behavior is frequently *not* in the agent's context window — it is a transitive dependency, hidden behind an interface the agent only knows by its documentation. -- [# again how do you know?]
+1. **They consume docs as ground truth.** A doc placed in context is, to a model, just more authoritative-looking text. Absent a reason to doubt it, the model will act on it.
+2. **They often cannot see the relevant code.** In a real repository the file that actually implements a behavior is frequently *not* in the agent's context window — it is a transitive dependency, hidden behind an interface the agent only knows by its documentation.
 
 When both hold, a stale doc is not a minor annoyance; it is the agent's *only* window onto a behavior
 that has changed underneath it. The agent then does exactly what it was asked — using a fact that is
@@ -714,6 +714,10 @@ remediation cost.
 ## 9. Ethics and disclosures
 
 - **No human subjects.** All data are model completions on synthetic, author-written fixtures.
+- **Funding & independence.** This study received no external or institutional funding and was
+  conducted independently and self-funded by the author. It was undertaken to empirically validate
+  Surface; "independent" here means free of outside sponsors, not disinterested — see the competing
+  interest immediately below.
 - **Competing interest, declared.** The author of this benchmark also authors the Surface tool whose
   value it measures. The study is pre-registered, the grading is deterministic and inspectable, the
   raw per-call data are released, and a negative result on any hypothesis (notably H6) is reportable —
@@ -721,6 +725,9 @@ remediation cost.
 - **Vendor neutrality.** The harness is provider-agnostic; models from three vendors run the identical
   scenario suite under identical grading, and the agent loop and graders never learn which provider
   produced an output.
+- **Data & licensing.** The benchmark software is released under the MIT License and the dataset,
+  scenarios, and research documents under CC BY 4.0; the raw per-call data and a dataset card
+  (`DATASET.md`) are released for independent re-analysis.
 
 ---
 
