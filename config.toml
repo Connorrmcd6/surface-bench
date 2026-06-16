@@ -35,16 +35,18 @@ input_per_mtok = 5.00
 output_per_mtok = 25.00
 
 # Cross-provider adapters (#107) for the multi-turn generalization sweep. Need the [providers] extra
-# (`uv sync --extra providers`) + OPENAI_API_KEY / GEMINI_API_KEY. TODO at first smoke: pin the exact
-# model ids and per-Mtok pricing below (placeholders).
+# (`uv sync --extra providers`) + OPENAI_API_KEY / GEMINI_API_KEY. Verify ids/prices at first smoke
+# against the official pricing pages.
 [models.gpt]
 provider = "openai"
-model_id = "gpt-5.1"          # TODO verify exact id at smoke time
-input_per_mtok = 0.00
-output_per_mtok = 0.00
+model_id = "gpt-5.4"          # current-gen mid flagship
+input_per_mtok = 2.50
+output_per_mtok = 15.00
 
 [models.gemini]
 provider = "gemini"
-model_id = "gemini-2.5-pro"   # TODO verify exact id at smoke time
-input_per_mtok = 0.00
-output_per_mtok = 0.00
+# Flash model so thinking can be disabled (thinking_budget=0) for budget parity with the others;
+# 2.5-pro mandates thinking and overruns the 1024-token answer budget. List price $1.50/$9.
+model_id = "gemini-3.5-flash"
+input_per_mtok = 1.50
+output_per_mtok = 9.00

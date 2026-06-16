@@ -42,6 +42,9 @@ class ToolCall:
     id: str
     name: str
     args: dict
+    # Gemini 3.x attaches a thought_signature to each function_call that must be echoed back on the
+    # next turn or the API rejects the history. Opaque/None for other providers.
+    signature: Any = None
 
 
 @dataclass
@@ -339,7 +342,7 @@ class OpenAIModel:
             messages=_openai_messages(system, messages),
             tools=_openai_tools(tools),
             tool_choice="auto",
-            max_tokens=self.max_tokens,
+            max_completion_tokens=self.max_tokens,
             temperature=self.temperature,
         )
         return _step_from_openai(resp)
@@ -375,7 +378,10 @@ def _gemini_contents(messages: list[dict]) -> list[dict]:
             if step.text:
                 parts.append({"text": step.text})
             for tc in step.tool_calls:
-                parts.append({"function_call": {"name": tc.name, "args": tc.args}})
+                part = {"function_call": {"name": tc.name, "args": tc.args}}
+                if tc.signature is not None:  # Gemini 3.x requires this echoed back
+                    part["thought_signature"] = tc.signature
+                parts.append(part)
                 id_to_name[tc.id] = tc.name
             contents.append({"role": "model", "parts": parts})
         elif m["role"] == "tool":
@@ -393,23 +399,31 @@ def _gemini_contents(messages: list[dict]) -> list[dict]:
 
 
 def _step_from_gemini(resp) -> Step:
-    cand = resp.candidates[0]
+    # A candidate can come back with no content/parts (e.g. a thinking model that exhausted
+    # max_output_tokens before emitting an answer part, or a safety stop). Parse defensively so a
+    # partless response yields an empty step carrying its finish_reason rather than crashing.
+    cands = getattr(resp, "candidates", None) or []
+    cand = cands[0] if cands else None
+    content = getattr(cand, "content", None) if cand else None
+    parts = getattr(content, "parts", None) or []
     text = ""
     calls: list[ToolCall] = []
-    for i, part in enumerate(cand.content.parts):
+    for i, part in enumerate(parts):
         fc = getattr(part, "function_call", None)
         if fc is not None:
             args = dict(fc.args) if getattr(fc, "args", None) else {}
-            calls.append(ToolCall(id=f"{fc.name}-{i}", name=fc.name, args=args))
+            sig = getattr(part, "thought_signature", None)
+            calls.append(ToolCall(id=f"{fc.name}-{i}", name=fc.name, args=args, signature=sig))
         elif getattr(part, "text", None):
             text += part.text
     u = getattr(resp, "usage_metadata", None)
     return Step(
         text=text,
         tool_calls=calls,
-        input_tokens=getattr(u, "prompt_token_count", 0) if u else 0,
-        output_tokens=getattr(u, "candidates_token_count", 0) if u else 0,
-        stop_reason=str(getattr(cand, "finish_reason", "") or ""),
+        # token counts can be None on a partless response — coerce to 0 so the loop can sum them.
+        input_tokens=(getattr(u, "prompt_token_count", 0) or 0) if u else 0,
+        output_tokens=(getattr(u, "candidates_token_count", 0) or 0) if u else 0,
+        stop_reason=str(getattr(cand, "finish_reason", "") or "") if cand else "",
     )
 
 
@@ -435,6 +449,10 @@ class GeminiModel:
             tools=_gemini_tools(tools),
             temperature=self.temperature,
             max_output_tokens=self.max_tokens,
+            # Thinking models (e.g. 2.5-pro) otherwise spend the whole output budget reasoning and
+            # emit no answer part. Disable it so Gemini answers directly within max_output_tokens,
+            # matching Claude (no extended thinking) and GPT across the matrix.
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
         )
         resp = self._client.models.generate_content(
             model=self.model_id, contents=_gemini_contents(messages), config=config
