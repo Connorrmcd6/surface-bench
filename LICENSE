@@ -19,14 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-----------------------------------------------------------------------------
-
-Scope: this MIT license covers the SOFTWARE in this repository — the benchmark
-harness and tooling (`surface_bench/`, `tools/`, `tests/`, `pyproject.toml`,
-`uv.lock`).
-
-The DATASET and written research artifacts — `results/`, `scenarios/`, and the
-research documents (`PAPER.md`, `PREREGISTRATION.md`, `ABC_CHECKLIST.md`,
-`DATASET.md`, `analysis/`) — are licensed separately under CC-BY-4.0; see
-`LICENSE-DATA`.
