@@ -1,0 +1,72 @@
+{
+  "timestamp": "20260616T105612Z",
+  "trials": 10,
+  "temperature": 1.0,
+  "max_tokens": 1024,
+  "mode": "multi",
+  "max_turns": 8,
+  "conditions": [
+    "C0",
+    "C1",
+    "C2",
+    "C3",
+    "Cw"
+  ],
+  "models": {
+    "gemini": {
+      "provider": "gemini",
+      "model_id": "gemini-3.5-flash",
+      "input_per_mtok": 1.5,
+      "output_per_mtok": 9.0
+    },
+    "gpt": {
+      "provider": "openai",
+      "model_id": "gpt-5.4",
+      "input_per_mtok": 2.5,
+      "output_per_mtok": 15.0
+    },
+    "haiku": {
+      "provider": "anthropic",
+      "model_id": "claude-haiku-4-5-20251001",
+      "input_per_mtok": 1.0,
+      "output_per_mtok": 5.0
+    },
+    "opus": {
+      "provider": "anthropic",
+      "model_id": "claude-opus-4-8",
+      "input_per_mtok": 5.0,
+      "output_per_mtok": 25.0
+    },
+    "sonnet": {
+      "provider": "anthropic",
+      "model_id": "claude-sonnet-4-6",
+      "input_per_mtok": 3.0,
+      "output_per_mtok": 15.0
+    }
+  },
+  "scenarios": [
+    "cascade-access-policy-code",
+    "cascade-backoff-offbyone-code",
+    "cascade-default-timeout-ts-code",
+    "cascade-money-rounding-code",
+    "cascade-page-size-ts-code",
+    "cascade-quota-batcher-code",
+    "cascade-ratelimit-burst-qa",
+    "cascade-retry-budget-code",
+    "cascade-serialize-key-order-ts-code",
+    "cascade-session-expiry-tz-qa",
+    "cascade-signal-threshold-code",
+    "cascade-ttl-units-code",
+    "cascade-validate-guard-ts-code"
+  ],
+  "excluded_scenarios": [
+    {
+      "id": "cascade-idempotency-window-qa",
+      "modes": [
+        "multi"
+      ],
+      "reason": "agent verifies the hidden dep in 100% of multi-turn trials regardless of doc; stale doc suppresses no verification (non-load-bearing in multi)"
+    }
+  ],
+  "surf_version": "surf 0.6.2"
+}

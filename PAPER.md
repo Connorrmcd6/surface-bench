@@ -4,18 +4,17 @@
 
 **Author:** Connor McDonald
 **Affiliation / artifact:** [`surface-bench`](https://github.com/Connorrmcd6/surface-bench) · companion tool: [Surface](https://github.com/Connorrmcd6/surface)
-**Draft date:** 2026-06-15
-**Status:** working paper
+**Draft date:** 2026-06-16
+**Status:** working paper — confirmatory multi-turn run complete (§6)
 
 > **Reading note.** This study is **pre-registered**: the hypotheses, conditions, metrics, and
-> analysis plan below were frozen *before* the confirmatory run (see `PREREGISTRATION.md`, to be
-> git-tagged at the freeze gate — tag `prereg-v2-multi`, `surf 0.6.2`; the preliminary pilot in §5 used
-> `surf 0.6.1`, which produces byte-identical scenario seals). The paper reports **real preliminary
-> results** from a single-shot pilot (§5) and reserves clearly-marked slots — tagged
-> **`[RESULTS PENDING]`** / **`[HEADLINE PENDING]`** — for the confirmatory **multi-turn** matrix
-> (§6), which is the centerpiece of the study and has **not yet been run**. Every number that
-> appears in §5 is drawn from the committed snapshot `results/2026-06-13-pilot-full-matrix/`; no
-> confirmatory figure is reported until the headline run lands.
+> analysis plan in §4 were frozen and git-tagged (`prereg-v2-multi`, `surf 0.6.2`) *before* the
+> confirmatory run, neutralizing HARKing and analysis cherry-picking. The paper reports two real
+> datasets: a single-shot **pilot** (§5; 3 Claude models, committed snapshot
+> `results/2026-06-13-pilot-full-matrix/`, `surf 0.6.1`, which produces byte-identical scenario seals)
+> and the **confirmatory multi-turn matrix** (§6; 5 models across 3 providers, 3,250 graded
+> completions, snapshot `results/confirmatory-20260616T172420Z/`), which is the centerpiece of the
+> study. Every confirmatory number in §6 is drawn from that snapshot's `summary.json`.
 
 ---
 
@@ -40,10 +39,18 @@ made **every model wrong on 100% of tasks** and confidently *misled* (asserted t
 restored 100% success, and handing the agent the automated drift report recovered nearly all of the
 loss. Where the code was *visible*, rot did not break correctness but imposed a consistent token tax.
 
-The confirmatory study extends this to a **multi-turn agentic** setting in which the agent has
-read-only tools (`read_file`, `grep`, `list_dir`) and may *choose* to verify the hidden dependency —
-removing the "follow the only available source" tautology — across five models from three providers.
-Its headline test is whether a confident stale doc **suppresses verification**: `[HEADLINE PENDING]`.
+The confirmatory study extends this to a **multi-turn agentic** setting (5 models, 3 providers; 3,250
+graded completions, 0 errors) in which the agent has read-only tools (`read_file`, `grep`,
+`list_dir`) and may *choose* to verify the hidden dependency — removing the "follow the only available
+source" tautology. The headline holds: a confident stale doc **suppresses verification** on every
+model (the agent verifies ~100% with no doc, far less with a stale one), and all six pre-registered
+hypotheses are supported — the accuracy/recovery effects (H1, H2, H3, H6) confirmed on all five models
+under Holm correction, with a stale doc driving the *misled* rate to 68–100% even on the most capable
+models. The agentic data further exposes **three distinct provider-specific failure modes**: gpt-5.4
+stops verifying entirely under a stale doc ("blind obedience"); Claude models suppress verification
+but those who verify recover; and gemini keeps verifying yet still defers to the stale prose it just
+contradicted ("verify-then-defer"). Capability does not buy resistance — the strongest models are
+among the worst affected.
 
 ---
 
@@ -420,62 +427,153 @@ versus a fresh doc (C1 − C2).
 
 ---
 
-## 6. Headline results — multi-turn agentic study `[RESULTS PENDING]`
+## 6. Headline results — multi-turn agentic study
 
-> This section is reserved for the confirmatory run. The tables and decision lines below are the
-> skeleton to be filled directly from `summary.json` once the matrix completes; **no figures are
-> entered until then.** Statistics follow §4 (Wilson rates, bootstrap delta CIs + p-values,
-> Holm–Bonferroni across the confirmatory family).
+These are the **confirmatory** results, run after the pre-registration was git-tagged
+(`prereg-v2-multi`) and reported directly from `results/confirmatory-20260616T172420Z/summary.json`.
+Statistics follow §4 (Wilson rates, bootstrap delta CIs, Holm–Bonferroni across the confirmatory
+success-delta family). **All four success/misled hypotheses (H1, H2, H3, H6) are confirmed on every
+model.** The verification hypotheses (H4/H5) hold too, but reveal a striking cross-provider
+heterogeneity that is the most novel finding of the study (§6.3–6.4).
 
-### 6.1 Run provenance `[RESULTS PENDING]`
+### 6.1 Run provenance
 
-Pre-registration tag, `surf --version`, model ids/prices, conditions, scenarios, N, max_turns, total
-calls, excluded (errored) cells, total spend.
+| Field | Value |
+|---|---|
+| Pre-registration tag | `prereg-v2-multi` · `surf 0.6.2` |
+| Mode / sampling | multi-turn, `max_turns = 8`, `temperature = 1.0`, `max_tokens = 1024` |
+| Models | `haiku` (claude-haiku-4-5-20251001), `sonnet` (claude-sonnet-4-6), `opus` (claude-opus-4-8), `gpt` (gpt-5.4), `gemini` (gemini-3.5-flash) |
+| Conditions | C0, C1, C2, C3, Cw |
+| Scenarios | 13 cascade (the QA scenario `cascade-idempotency-window-qa` was pre-excluded from multi mode as non-load-bearing — the agent verifies it 100% of the time regardless of the doc — a choice recorded in `run.json`, not chosen by results) |
+| Scale | 13 × 5 × 5 × N=10 = **3,250 graded completions, 0 errors, 0 excluded cells** |
+| Spend | **$62.16** (opus $28.59, sonnet $13.33, gemini $8.99, gpt $5.95, haiku $5.29) |
 
-### 6.2 Success and misled rates — per model × condition (cascade) `[RESULTS PENDING]`
+Gemini ran with thinking disabled (`thinking_budget = 0`) so its single completion budget matches the
+others (Claude uses no extended thinking; gpt-5.4 reasons within `max_completion_tokens`).
 
-| Model | C0 | C1 | C2 | C3 | Cw |
+### 6.2 Success and misled rates — per model × condition (cascade)
+
+success [95% Wilson] · misled · mean output tokens; n = 130 per cell.
+
+| Model | C0 | C1 (stale) | C2 (fresh) | C3 (stale+surf) | Cw (warning) |
 |---|---|---|---|---|---|
-| haiku | … | … | … | … | … |
-| sonnet | … | … | … | … | … |
-| opus | … | … | … | … | … |
-| gpt | … | … | … | … | … |
-| gemini | … | … | … | … | … |
+| haiku  | 78% [71–85] · mis 2% · 763  | **17% [11–24] · mis 82%** · 601 | **96% [91–98]** · 0% · 568  | 72% [63–79] · mis 26% · 777 | 31% [23–39] · mis 69% · 666 |
+| sonnet | 94% [88–97] · mis 0% · 607  | **19% [13–27] · mis 81%** · 555 | **100% [97–100]** · 0% · 508 | 88% [82–93] · mis 12% · 572 | 46% [38–55] · mis 52% · 580 |
+| opus   | 91% [85–95] · mis 0% · 810  | **32% [24–40] · mis 68%** · 610 | **95% [90–98]** · 0% · 561  | 98% [93–99] · mis 2% · 783 | 78% [70–84] · mis 13% · 851 |
+| gpt    | 95% [90–98] · mis 4% · 320  | **0% [0–3] · mis 100%** · 222   | **100% [97–100]** · 0% · 226 | 54% [45–62] · mis 46% · 240 | 8% [5–15] · mis 91% · 234 |
+| gemini | 88% [82–93] · mis 0% · 429  | **17% [11–24] · mis 77%** · 458 | **94% [88–97]** · 0% · 372  | 77% [69–83] · mis 14% · 509 | 45% [37–54] · mis 45% · 514 |
 
-(success [Wilson CI] · misled · output tokens, per cell.)
+A confident stale doc (C1) collapses success to 0–32% and drives the *misled* rate to 68–100% on
+every model — **including opus and gpt**, the most capable systems tested. Fresh docs (C2) restore
+94–100%. The pattern of the single-shot pilot survives intact in the agentic setting, where the agent
+could have verified.
 
-### 6.3 Verification rate — per model × condition (cascade, multi only) `[HEADLINE PENDING]`
+### 6.3 Verification rate — per model × condition (cascade, multi only)
 
-| Model | C0 | C1 | C2 | C3 | Cw | `verified_then_correct` |
+Fraction of trials that read the hidden dependency before answering [95% Wilson]; `v→ok` = success
+among C1 verifiers (H5's validity check).
+
+| Model | C0 | C1 | C2 | C3 | Cw | C1 `v→ok` |
 |---|---|---|---|---|---|---|
-| … | … | … | … | … | … | … |
+| haiku  | 100% [97–100] | 23% [17–31] | 25% | 58% | 33% | 47% |
+| sonnet | 100% [97–100] | 20% [14–28] | 18% | 18% | 44% | 62% |
+| opus   | 100% [97–100] | 33% [26–42] | 38% | 29% | 87% | 95% |
+| gpt    | 96% [91–98]   | **0% [0–3]**  | 2%  | 23% | 9%  | n/a (no verifiers) |
+| gemini | 100% [97–100] | **85% [77–90]** | 74% | 100% | 100% | 20% |
 
-H4 deltas (verification_rate(C0) − verification_rate(C1)) with bootstrap CI + Holm flag per model.
+**H4 (verification suppression, C0 − C1) is significant on every model** but spans an order of
+magnitude: gpt **+96 pp** [+92, +99], sonnet +80 pp [+73, +86], haiku +77 pp [+69, +84], opus
++67 pp [+58, +75], gemini **+15 pp** [+9, +22]. With **no** doc, all five models verify ~100% of the
+time; a stale doc is what stops them.
 
-### 6.4 Mediation (H5) — within-C1 success split `[RESULTS PENDING]`
+**This exposes three distinct failure mechanisms** — the study's most important new result:
 
-Per model: success among rows that verified the hidden dependency vs success among rows that did not.
+- **gpt — blind obedience.** A stale doc shuts off verification *entirely* (0%); gpt commits to the
+  wrong answer without ever opening the file it could have read in C0 96% of the time.
+- **Claude (haiku/sonnet/opus) — suppressed but rescuable.** A stale doc suppresses verification, but
+  the minority who *do* verify are mostly correct (C1 `v→ok` 47–95%, opus best). Verification is a
+  genuine antidote here.
+- **gemini — verify-then-defer.** Gemini barely suppresses (still verifies 85% under C1) yet is still
+  77% misled, because reading the truth does *not* rescue it: only **20%** of its C1 verifiers answer
+  correctly. Gemini opens the hidden file, sees the real code, and *still* follows the stale prose.
+  This is a second failure mode the pre-registration did not anticipate: the harm is not only skipped
+  verification but **discounted verification**.
 
-### 6.5 Confirmatory decisions `[RESULTS PENDING]`
+### 6.4 Mediation (H5) — within-C1 success split
 
-Complete each with **confirmed / suggestive / not supported** plus the delta, bootstrap CI, p-value,
-and Holm outcome:
+Success among C1 trials that verified the hidden dependency vs those that did not:
 
-- **H1** success(C2) > success(C1): `[PENDING]`
-- **H2** misled(C1) > misled(C0): `[PENDING]`
-- **H3** success(C3) ≈ success(C2) ≫ C1: `[PENDING]`
-- **H4** verification_rate(C1) < verification_rate(C0): `[PENDING]`
-- **H5** within C1, success(verified) > success(not verified): `[PENDING]`
-- **H6** success(C3) > success(Cw): `[PENDING]`
+| Model | verified | not verified |
+|---|---|---|
+| opus   | **95%** (n=43) | 0% (n=87) |
+| sonnet | 62% (n=26) | 9% (n=104) |
+| haiku  | 47% (n=30) | 8% (n=100) |
+| gemini | 20% (n=110) | 0% (n=20) |
+| gpt    | — (n=0) | 0% (n=130) |
 
-### 6.6 Cross-provider generalization (exploratory) `[RESULTS PENDING]`
+For the three Claude models the split is large and in the predicted direction: verification mediates
+the harm. For **gpt** the mediation is *untestable* — there are zero C1 verifiers, the limiting case
+of suppression. For **gemini** the direction holds (20% > 0%) but the effect is weak: verifying
+barely helps because gemini defers to the doc anyway (see §6.3).
 
-Per-provider deltas for the key contrasts, addressing whether "capability does not buy
-rot-resistance" holds across Anthropic, OpenAI, and Google.
+### 6.5 Confirmatory decisions
 
-### 6.7 Token cost (exploratory) `[RESULTS PENDING]`
+| | Hypothesis | Result | Decision |
+|---|---|---|---|
+| **H1** | success(C2) > success(C1) | +64 to +100 pp; every model Holm ✓ (opus +64 [+55,+72], gemini +77 [+69,+85], sonnet +81 [+74,+87], haiku +79 [+72,+86], gpt +100 [+100,+100]) | **Confirmed (all 5)** |
+| **H2** | misled(C1) > misled(C0) | C1 misled 68–100% vs C0 0–4%; non-overlapping 95% Wilson intervals on every model | **Confirmed (all 5)** |
+| **H3** | success(C3) ≈ C2, ≫ C1 | C3 − C1 = +54 to +69 pp, every model Holm ✓. The "≫ C1" recovery is confirmed everywhere; full parity with C2 holds for **opus** (98% vs 95%) and approaches it for sonnet (88% vs 100%), but C3 only partially recovers haiku (72%) and gemini (77%) and recovers gpt weakly (54% vs 100%) | **Confirmed on recovery (all 5); full C2-parity only for opus** |
+| **H4** | verification_rate(C1) < (C0) | Significant on all 5; +15 pp (gemini) to +96 pp (gpt) | **Confirmed (all 5)** |
+| **H5** | within C1, success(verified) > (not) | Supported for opus/sonnet/haiku; degenerate for gpt (no verifiers); weak for gemini (20% vs 0%) | **Confirmed for Claude; untestable (gpt) / weak (gemini)** |
+| **H6** | success(C3) > success(Cw) | +20 to +45 pp; every model Holm ✓ (opus +20 [+12,+28], gemini +32 [+20,+43], haiku +41 [+29,+52], sonnet +42 [+32,+52], gpt +45 [+35,+55]) | **Confirmed (all 5)** |
 
-Output-token deltas (C1 − C2, C1 − C0, C1 − C3) per model and family.
+H6 is decisive: handing the agent Surface's *corrected code* (C3) beats a content-free "may be
+outdated" warning (Cw) on every model. The recovery is the **fix**, not mere suspicion — though the
+warning alone is not worthless (Cw − C1 is positive and Holm-significant on every model, +8 to
++46 pp, largest for opus), so suspicion helps a little and the correction helps a lot more.
+
+**Oracle flags (pre-stated, reported not dropped).** Nine of the 65 scenario×model cells tripped the
+oracle, in two categories, none of which overturns a family-level decision above:
+
+- *C2-fresh < 90%* (5 cells): `default-timeout-ts` (opus 40%, gemini 70%), `page-size-ts`
+  (gemini 70%), `ttl-units` (gemini 80%), `validate-guard-ts` (haiku 50%). These cluster on
+  TypeScript scenarios and on gemini; opus's 40% on `default-timeout-ts` — a strong model failing a
+  *fresh*-doc task — points at a likely TS fixture/grader weakness rather than a doc-trust effect, and
+  is flagged for inspection.
+- *C1 never misleads* (4 cells): `quota-batcher` (gemini), `ratelimit-burst-qa` (opus, sonnet),
+  `signal-threshold` (sonnet). These are strong models being *immune* to specific easy scenarios — the
+  drift is not load-bearing for that particular model×scenario, model heterogeneity rather than a
+  fixture defect. Per §4.3 they are flagged here, not silently removed; every model's aggregate H1–H6
+  is Holm-significant with them included.
+
+### 6.6 Cross-provider generalization (exploratory)
+
+The central pilot claim — **capability does not buy rot-resistance** — holds and strengthens across
+three providers. The most capable systems are not the most resistant: gpt-5.4 is the *worst* affected
+(C1 0% success, 100% misled, 0% verification), and opus, the strongest Claude, is still 68% misled
+under a stale doc. Resistance does not track a capability ranking; it tracks **provider-specific
+verification behaviour** (§6.3), which splits cleanly into the three mechanisms above. Note also that
+the marginal value of *accurate prose over no doc* (C2 − C0) is small but positive everywhere
+(+5 to +18 pp), Holm-significant for gpt/haiku/sonnet and not for gemini/opus — i.e. most of Surface's
+value is in *removing rot*, not in adding prose a capable agent could derive itself.
+
+### 6.7 Token cost (exploratory)
+
+Output-token deltas (mean, 95% bootstrap CI):
+
+| Model | C1 − C2 (stale vs fresh) | C1 − C0 (stale vs none) | C1 − C3 (stale vs +report) |
+|---|---|---|---|
+| haiku  | +33 [−22, +90] | **−162** [−218, −103] | **−175** [−230, −118] |
+| sonnet | **+47** [+11, +85] | **−52** [−90, −12] | −17 [−63, +28] |
+| opus   | +48 [−29, +125] | **−200** [−269, −127] | **−174** [−266, −81] |
+| gpt    | −3 [−20, +14] | **−98** [−116, −79] | −18 [−36, +0] |
+| gemini | **+86** [+42, +131] | +29 [−21, +81] | **−51** [−101, −1] |
+
+The pilot's "rot you can't see makes you *cheaply* wrong" pattern recurs: on four of five models C1
+spends *fewer* output tokens than C0 (the stale doc lets the model commit immediately instead of
+deliberating about the unseen dependency), and recovery (C3) is dearer than the error (C1). Gemini is
+the lone exception (C1 − C0 ≈ 0): consistent with §6.3, it keeps verifying under the stale doc rather
+than committing cheaply — it simply ignores what it finds.
 
 ---
 
@@ -490,8 +588,11 @@ The pilot's strongest signal is the flat **+100 pp** H1 effect across the capabi
 drifted dependency is hidden, haiku, sonnet, and opus are *all* 0% correct and 100% misled under a
 stale doc. This is the central refutation of "just use a better model." A more capable model reasons
 more fluently about the wrong premise; it does not spontaneously distrust a confident, plausible doc
-about a file it cannot see. **Whether a stronger model in a multi-turn setting compensates by
-verifying more often is exactly H4, and is `[HEADLINE PENDING]`.**
+about a file it cannot see. **The confirmatory multi-turn run settles the obvious rejoinder — "a
+stronger agent that *can* verify will" — in the negative.** Capability does not buy resistance: gpt-5.4
+is the worst-affected model (C1 0% success, 100% misled, and it stops verifying *entirely*), and opus,
+the strongest Claude, is still 68% misled when it could have opened the file. Resistance tracks
+provider-specific verification behaviour (§6.3), not a capability ranking.
 
 ### 7.2 Two distinct costs of rot
 
@@ -510,19 +611,34 @@ In one line: **rot you can't see makes you wrong; rot you can see makes you slow
 ### 7.3 The mechanism (the non-tautological core)
 
 The single-shot result is open to the objection that, with the dependency hidden, following the doc is
-the only available move. The multi-turn track answers this by giving the agent the *option* to verify.
-If H4 holds — a confident stale doc lowers verification rate relative to no doc — then the harm is not
-about availability of information but about the doc *suppressing the agent's own checking*. H5 closes
-the loop: within C1, verifiers should be correct and non-verifiers misled, making verification the
-mediator of the effect. **Both are `[HEADLINE PENDING]`.**
+the only available move. The multi-turn track answers this by giving the agent the *option* to verify,
+and the answer is decisive: **H4 holds on every model** — a confident stale doc lowers the
+verification rate relative to no doc (the agent verifies ~100% in C0), so the harm is not about
+*availability* of information but about the doc *suppressing the agent's own checking*. The mechanism,
+however, is not uniform across providers, and the heterogeneity is the richest result of the study:
+
+- **Skipped verification (gpt, Claude).** For gpt the suppression is total (0% verify under C1) and
+  for the Claude models it is strong but partial; among the Claude minority who *do* verify, H5 holds
+  cleanly (opus: 95% of C1 verifiers are correct vs 0% of non-verifiers). Here verification is the
+  mediator exactly as pre-registered.
+- **Discounted verification (gemini).** Gemini barely suppresses (still verifies 85% under C1) yet is
+  77% misled, because reading the truth does not rescue it — only 20% of its verifiers answer
+  correctly. The model opens the hidden file, sees code that contradicts the doc, and trusts the doc
+  anyway. This is a *second* doc-trust pathway the pre-registration did not anticipate: not "didn't
+  look" but "looked and deferred." It means verification tooling alone is necessary but not sufficient
+  — an agent has to *weight* what it finds over confident prose, which gemini does not reliably do.
 
 ### 7.4 Is it the fix, or just suspicion? (C3 vs Cw)
 
 C3 hands the agent Surface's corrected code; Cw hands it only a content-free "may be outdated"
 warning. H6 (C3 > Cw) is what separates "surfacing the *fix* recovers performance" from "merely making
-the agent suspicious recovers performance." A null H6 would be an important, publishable negative
-result — it would suggest much of the value is in distrust, not in the specific correction.
-`[RESULTS PENDING]`.
+the agent suspicious recovers performance." **H6 is confirmed on every model** (C3 − Cw = +20 to
++45 pp, all Holm-significant): the recovery comes from the correction, not just from distrust. The
+control is not inert, though — a bare warning does help a little (Cw − C1 positive and
+Holm-significant everywhere, +8 to +46 pp, largest on opus), so suspicion buys a modest gain and the
+corrected code buys a much larger one. The practical reading: telling an agent "this might be wrong" is
+better than nothing, but telling it *what is actually true* is what restores correctness — and only a
+deterministic drift gate like Surface can supply the latter.
 
 ### 7.5 Cost impact for decision-makers
 
@@ -625,8 +741,24 @@ remediation cost.
   uv run python -m surface_bench.report results/<timestamp>
   uv run python -m surface_bench.oracle results/<timestamp>
   ```
+- **Reproducing the confirmatory multi-turn matrix** (cross-provider; needs the `providers` extra and
+  the OpenAI/Gemini keys). Each model is run into its own directory and the per-model `raw.jsonl` files
+  are concatenated for analysis (see `RUN_CONFIRMATORY_MATRIX.md` for the full operator runbook):
+  ```sh
+  uv sync --extra providers
+  export ANTHROPIC_API_KEY=...  OPENAI_API_KEY=...  GEMINI_API_KEY=...
+  SCN=$(ls -d scenarios/cascade-* | xargs -n1 basename)
+  for m in haiku sonnet opus gpt gemini; do
+    uv run python -m surface_bench.run --models $m --mode multi --max-turns 8 --trials 10 \
+      --scenarios $SCN --out results/run-$m
+  done
+  cat results/run-*/raw.jsonl > results/confirmatory/raw.jsonl   # + merged run.json (see runbook)
+  uv run python -m surface_bench.report results/confirmatory
+  uv run python -m surface_bench.oracle results/confirmatory
+  ```
 - **Artifacts.** Harness, scenarios, graders, reference solutions, the pre-registration, the ABC
-  self-audit, and the committed pilot snapshot are all in the `surface-bench` repository.
+  self-audit, and both the committed pilot and confirmatory snapshots are all in the `surface-bench`
+  repository.
 
 ---
 
@@ -637,10 +769,16 @@ Documentation rot is usually treated as a hygiene problem. For autonomous coding
 but stale doc is the agent's only window onto a world that has moved, and the agent acts on a fact that
 is no longer true. Our single-shot pilot shows this failure is total and capability-invariant — every
 model wrong on every hidden-dependency task under a stale doc — and that accurate docs, or simply
-surfacing the drift, restore correctness. The confirmatory multi-turn study asks the deeper question:
-not merely whether stale docs *can* mislead an agent that has no alternative, but whether a confident
-stale doc *suppresses* an agent's own verification when verification is freely available.
-`[HEADLINE PENDING]`
+surfacing the drift, restore correctness. The confirmatory multi-turn study answers the deeper
+question: even when verification is *freely available*, a confident stale doc still misleads — driving
+the misled rate to 68–100% on all five models across three providers — because the doc **suppresses the
+agent's own verification** (H4 confirmed everywhere) or, in gemini's case, because the agent verifies
+and **defers to the doc anyway**. Capability does not rescue this: the strongest models are among the
+worst affected. The remedy that works is not a better model and not a generic warning, but the
+*corrected code* a deterministic drift gate supplies — handing the agent Surface's report beats a bare
+"may be outdated" warning on every model (H6 confirmed). For agents acting on documentation they cannot
+independently weigh, keeping docs honest — or surfacing exactly where they have rotted — is a
+correctness control, not hygiene.
 
 ---
 
@@ -658,4 +796,5 @@ stale doc *suppresses* an agent's own verification when verification is freely a
 
 *Companion documents in this repository: `PREREGISTRATION.md` (frozen hypotheses + analysis plan),
 `ABC_CHECKLIST.md` (benchmark-rigor self-audit), `README.md` (operator manual), and
-`results/2026-06-13-pilot-full-matrix/report.md` (the standalone pilot write-up).*
+`results/2026-06-13-pilot-full-matrix/report.md` (the standalone pilot write-up), and
+`results/confirmatory-20260616T172420Z/report.md` (the standalone confirmatory write-up).*
