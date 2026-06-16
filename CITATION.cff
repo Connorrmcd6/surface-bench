@@ -31,4 +31,8 @@ keywords:
 license: CC-BY-4.0
 version: "1.0.0"
 date-released: "2026-06-16"
-# doi: 10.5281/zenodo.XXXXXXX   # uncomment and fill after minting a Zenodo DOI (see DATASET.md)
+doi: 10.5281/zenodo.20722100
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.20722100
+    description: Concept DOI (always resolves to the latest version)

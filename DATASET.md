@@ -111,10 +111,12 @@ uv run python -m surface_bench.oracle  results/confirmatory-20260616T172420Z
 Curated synthetic fixtures (not real repositories), a read-only agent loop (no edit/run/test thrash),
 Python and TypeScript only. See [`PAPER.md`](PAPER.md) §8 for the full threats-to-validity treatment.
 
-## Citing this dataset / minting a DOI
+## Citing this dataset
 
-Use [`CITATION.cff`](CITATION.cff) for citation metadata. To mint a permanent, citable DOI:
+This dataset is archived on Zenodo with a permanent DOI:
 
-1. Enable the repository in [Zenodo](https://zenodo.org/) (GitHub integration, one-time).
-2. Cut a GitHub Release; Zenodo automatically archives that release and issues a DOI.
-3. Add the DOI to the `doi:` field in `CITATION.cff` and a DOI badge to `README.md`.
+> **DOI: [10.5281/zenodo.20722100](https://doi.org/10.5281/zenodo.20722100)** (concept DOI — always
+> resolves to the latest version).
+
+Machine-readable citation metadata is in [`CITATION.cff`](CITATION.cff). Each tagged GitHub release is
+archived as a new Zenodo version under this concept DOI.

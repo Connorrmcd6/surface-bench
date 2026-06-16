@@ -75,7 +75,7 @@ no longer true.
 This failure mode is recognized in production practice, not only in the lab. Industry accounts of
 *context poisoning* name *context rot* — "information becomes outdated but remains in your knowledge
 base" — as a primary cause of degraded LLM output, observing that once stale content enters the
-context window "the LLM references it as truth, creating cascading errors" (Murúa, 2026) -- [# add link]. This study
+context window "the LLM references it as truth, creating cascading errors" (Murúa, 2026). This study
 turns that qualitative observation into a controlled, quantified measurement.
 
 ### 1.2 The intervention under test

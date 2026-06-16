@@ -1,5 +1,8 @@
 # surface-bench — operator manual
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20722100.svg)](https://doi.org/10.5281/zenodo.20722100)
+&nbsp;License: [MIT](LICENSE) (code) · [CC BY 4.0](LICENSE-DATA) (data)
+
 Empirically measuring how much **documentation accuracy** changes an agent's task performance — the
 gap [Surface](https://github.com/Connorrmcd6/surface) exists to protect. Surface doesn't make an agent smarter; it stops docs
 silently rotting. So its value to an agent equals the performance delta between working from **fresh**
@@ -12,10 +15,22 @@ experiment is, how to run it, how to read the results, how to author scenarios, 
 This is a standalone repo; it has no dependency on the [Surface](https://github.com/Connorrmcd6/surface)
 Rust core — it only *consumes* the `surf` binary's output.
 
-> **Companion docs:** [`PREREGISTRATION.md`](PREREGISTRATION.md) (the frozen hypotheses + analysis
-> plan for the headline run), [`ABC_CHECKLIST.md`](ABC_CHECKLIST.md) (benchmark-rigor self-audit),
-> [`scenarios/CHECKLIST.md`](scenarios/CHECKLIST.md) (how to author one scenario), and the committed
-> v1 write-up at [`results/2026-06-13-pilot-full-matrix/report.md`](results/2026-06-13-pilot-full-matrix/report.md).
+> **Status: the study is complete.** The pre-registration was frozen and git-tagged
+> (`prereg-v2-multi`) before the confirmatory run, which then executed the full multi-turn matrix —
+> **5 models across 3 providers, 3,250 graded completions, 0 errors.** Headline: a confident stale doc
+> drives the *misled* rate to **68–100% on every model** (capability does not buy resistance), via
+> three distinct failure modes (blind obedience, suppressed-but-rescuable verification, and
+> verify-then-defer). Full write-up and numbers in [`PAPER.md`](PAPER.md) §6.
+
+> **Companion docs:** [`PAPER.md`](PAPER.md) (the paper — pilot in §5, confirmatory results in §6),
+> [`PREREGISTRATION.md`](PREREGISTRATION.md) (frozen hypotheses + analysis plan),
+> [`ABC_CHECKLIST.md`](ABC_CHECKLIST.md) (benchmark-rigor self-audit),
+> [`DATASET.md`](DATASET.md) (dataset card — schema + how to reuse the released data),
+> [`scenarios/CHECKLIST.md`](scenarios/CHECKLIST.md) (how to author one scenario). Committed result
+> snapshots: the single-shot pilot
+> [`results/2026-06-13-pilot-full-matrix/report.md`](results/2026-06-13-pilot-full-matrix/report.md)
+> and the confirmatory multi-turn matrix
+> [`results/confirmatory-20260616T172420Z/report.md`](results/confirmatory-20260616T172420Z/report.md).
 
 ---
 
@@ -133,6 +148,11 @@ multi at small N (pilot the verification metric) → the full matrix. Gate each 
 (§5) passing. Cost levers: `--max-turns` cap, tiered `--trials` (e.g. N=10 cascade / N=5
 comprehension), and dropping comprehension from multi mode (it doesn't test verification).
 
+For the full cross-provider run, [`RUN_CONFIRMATORY_MATRIX.md`](RUN_CONFIRMATORY_MATRIX.md) is the
+operator runbook used for the committed confirmatory matrix: run each model into its **own** `--out`
+dir (so a mid-run failure only loses that one model — the runner has no resume), then concatenate the
+per-model `raw.jsonl` files into one directory for `report`/`oracle`.
+
 ---
 
 ## 4. Reading the results
@@ -217,7 +237,8 @@ outputs.
                              grader/ (rubric.toml | grader.toml + tests/)
   tests/                     offline pytest (tools, agent loop, adapters, metrics, scenario polarity)
   results/<timestamp>/       raw.jsonl · run.json · summary.json · report.md · *.png  (gitignored,
-                             except committed snapshots like 2026-06-13-pilot-full-matrix)
+                             except committed snapshots: 2026-06-13-pilot-full-matrix and
+                             confirmatory-20260616T172420Z, each with a PROVENANCE.md)
 ```
 
 ---
@@ -270,9 +291,11 @@ A cascade scenario clones `scenarios/cascade-quota-batcher-code/`. The loop:
 
 `uv.lock` pins the Python env. `run.json` records every parameter (models + ids, trials,
 temperature, max_tokens, mode, max_turns, conditions, scenarios, `surf --version`). `raw.jsonl`
-preserves raw outputs so grading/metrics re-run offline. To reproduce a committed snapshot, check out
-the repo at its tag, `uv sync`, and re-run `report` on the snapshot dir (it regenerates
-`summary.json` + figures from the frozen `raw.jsonl`).
+preserves raw outputs so grading/metrics re-run offline. Two snapshots are committed and
+re-gradeable: the single-shot pilot (`results/2026-06-13-pilot-full-matrix/`) and the confirmatory
+multi-turn matrix (`results/confirmatory-20260616T172420Z/`). To reproduce one, `uv sync` and re-run
+`report` on the snapshot dir (it regenerates `summary.json` + figures from the frozen `raw.jsonl`); see
+each snapshot's `PROVENANCE.md` for how it was produced.
 
 ---
 
@@ -287,8 +310,9 @@ the repo at its tag, `uv sync`, and re-run `report` on the snapshot dir (it rege
 **Using the data.** Start with [`DATASET.md`](DATASET.md) — it documents the released snapshots, the
 `raw.jsonl` schema, and how to load and regenerate the metrics offline.
 
-**Citation.** Citation metadata is in [`CITATION.cff`](CITATION.cff) (GitHub shows a "Cite this
-repository" button). To mint a permanent DOI, archive a GitHub Release via Zenodo (see `DATASET.md`).
+**Citation.** Cite via the archived DOI **[10.5281/zenodo.20722100](https://doi.org/10.5281/zenodo.20722100)**
+(concept DOI — always resolves to the latest version). Citation metadata is in
+[`CITATION.cff`](CITATION.cff) (GitHub shows a "Cite this repository" button).
 
 **Funding & independence.** This study received **no external or institutional funding**; it was
 conducted independently and **self-funded** by the author to empirically validate Surface. "Independent"
