@@ -38,6 +38,11 @@ class Scenario:
     # code scenarios: the visible file the agent returns (e.g. "code/throttle.py"). Lets the
     # grader-polarization self-test (tools/validate_scenario.py) build the `FILE:` block.
     edit_path: str = ""
+    # run modes this scenario is excluded from (e.g. ["multi"]) and why. A scenario whose drift is
+    # not load-bearing in a given mode measures nothing there; the runner drops it and records the
+    # exclusion in run.json (a pre-stated choice, not chosen by results).
+    exclude_modes: list[str] = field(default_factory=list)
+    exclude_reason: str = ""
 
     @property
     def grader_dir(self) -> Path:
@@ -82,6 +87,8 @@ def load_scenario(path: str | Path) -> Scenario:
         code=_read_code(root / "code"),
         hidden_paths=meta.get("hidden_paths", []),
         edit_path=meta.get("edit_path", ""),
+        exclude_modes=meta.get("exclude_modes", []),
+        exclude_reason=meta.get("exclude_reason", ""),
     )
 
 

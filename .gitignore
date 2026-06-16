@@ -5,3 +5,7 @@ __pycache__/
 *.pyc
 .venv/
 .DS_Store
+
+# Transient operator scratch files: per-run pilot instructions and captured run logs.
+RUN_*_PILOT.md
+*.log

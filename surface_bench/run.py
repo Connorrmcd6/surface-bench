@@ -73,6 +73,14 @@ def main() -> None:
     if not scenarios:
         sys.exit("no scenarios matched")
 
+    # Drop scenarios pre-declared as non-load-bearing in this mode (recorded in run.json below).
+    excluded = [s for s in scenarios if mode in s.exclude_modes]
+    scenarios = [s for s in scenarios if mode not in s.exclude_modes]
+    if not scenarios:
+        sys.exit(f"no scenarios left after {mode}-mode exclusions")
+    for s in excluded:
+        print(f"excluding {s.id} from {mode} mode: {s.exclude_reason}", file=sys.stderr)
+
     models = {
         n: build_model(
             n, model_specs[n], temperature=temperature, max_tokens=max_tokens, mode=mode
@@ -108,6 +116,9 @@ def main() -> None:
         "conditions": args.conditions,
         "models": {n: model_specs[n] for n in model_names},
         "scenarios": [s.id for s in scenarios],
+        "excluded_scenarios": [
+            {"id": s.id, "modes": s.exclude_modes, "reason": s.exclude_reason} for s in excluded
+        ],
         "surf_version": _surf_version(),
     }
     (out_dir / "run.json").write_text(json.dumps(meta, indent=2) + "\n")

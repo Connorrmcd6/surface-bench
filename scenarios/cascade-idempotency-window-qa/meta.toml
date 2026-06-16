@@ -15,3 +15,11 @@ drift = "is_duplicate body `key in self._processed` -> `return False` (duplicate
 anchor = "code/payments/idempotency.py > IdempotencyStore > is_duplicate"
 
 hidden_paths = ["code/payments/*.py"]
+
+# Excluded from multi mode (see analysis/HAIKU_MULTI_PILOT_ANALYSIS.md §3.1). In the 20260615T200423Z pilot
+# the agent verified the hidden dependency in 100% of trials in *every* condition, including the
+# stale-doc cell — so the stale doc suppressed no verification and the drift is non-load-bearing in
+# multi mode (it trips the oracle's "C1 never misleads" tripwire). Retained for single mode, where
+# the agent cannot verify. Recorded here so the exclusion is a pre-stated rule, not chosen by results.
+exclude_modes = ["multi"]
+exclude_reason = "agent verifies the hidden dep in 100% of multi-turn trials regardless of doc; stale doc suppresses no verification (non-load-bearing in multi)"
