@@ -8,7 +8,7 @@ by looking at outcomes. Operating instructions are in [`README.md`](README.md).
 > **Freeze gate.** Tag this only once: (a) the scenario set is final (all `cascade-*` PRs merged),
 > (b) `python tools/author.py --all` and `python tools/validate_scenario.py --all` are green across
 > the set, and (c) a full `--models mock` run + `python -m surface_bench.oracle` is clean. Record
-> the tag and the `surf --version` here when frozen: `__TBD__`.
+> the tag and the `surf --version` here when frozen: `prereg-v2-multi`, `surf 0.6.2`.
 
 ## 1. Question
 

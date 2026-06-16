@@ -9,7 +9,7 @@
 
 > **Reading note.** This study is **pre-registered**: the hypotheses, conditions, metrics, and
 > analysis plan below were frozen *before* the confirmatory run (see `PREREGISTRATION.md`, to be
-> git-tagged at the freeze gate — tag `__TBD__`, `surf 0.6.2`; the preliminary pilot in §5 used
+> git-tagged at the freeze gate — tag `prereg-v2-multi`, `surf 0.6.2`; the preliminary pilot in §5 used
 > `surf 0.6.1`, which produces byte-identical scenario seals). The paper reports **real preliminary
 > results** from a single-shot pilot (§5) and reserves clearly-marked slots — tagged
 > **`[RESULTS PENDING]`** / **`[HEADLINE PENDING]`** — for the confirmatory **multi-turn** matrix
