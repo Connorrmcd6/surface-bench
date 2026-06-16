@@ -10,3 +10,6 @@ descriptive, not authoritative: the paper and pre-registration are the sources o
 - [`HAIKU_MULTI_PILOT_ANALYSIS.md`](HAIKU_MULTI_PILOT_ANALYSIS.md) — multi-turn haiku pilot
   (`results/20260615T200423Z/`): verdict to pursue the full matrix, plus triage of the four
   oracle-flagged scenarios.
+- [`HAIKU_MULTI_RERUN_ANALYSIS.md`](HAIKU_MULTI_RERUN_ANALYSIS.md) — post-fix haiku re-run
+  (`results/20260616T060356Z/`): oracle down to one cosmetic warning, all hypotheses hold;
+  clearance to freeze and run the full matrix.
