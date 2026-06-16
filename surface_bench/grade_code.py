@@ -27,9 +27,30 @@ _FILE_BLOCK = re.compile(
     re.MULTILINE | re.DOTALL,
 )
 
+# Fallback: a `FILE: <path>` line followed by an UNFENCED body (the model produced correct file
+# contents but dropped the ``` fence). Body runs to the next FILE: marker or end of output. Used
+# ONLY when no fenced block parses, so the fenced contract stays primary and a well-formed answer is
+# never reinterpreted. This is a parser-leniency change — it never touches scenarios or grading — so
+# it cannot bias the result toward any condition; it only stops penalising correct work for a
+# cosmetic formatting miss.
+_FILE_UNFENCED = re.compile(
+    r"^FILE:\s*(?P<path>\S+)[ \t]*\n(?P<body>.*?)(?=^FILE:|\Z)",
+    re.MULTILINE | re.DOTALL,
+)
+
 
 def parse_files(output: str) -> dict[str, str]:
-    return {m.group("path").strip(): m.group("body") for m in _FILE_BLOCK.finditer(output)}
+    files = {m.group("path").strip(): m.group("body") for m in _FILE_BLOCK.finditer(output)}
+    if files:
+        return files
+    out: dict[str, str] = {}
+    for m in _FILE_UNFENCED.finditer(output):
+        body = m.group("body")
+        # Defensively strip a stray opening/closing fence if the model half-fenced the block.
+        body = re.sub(r"\A```[^\n]*\n", "", body)
+        body = re.sub(r"\n```[ \t]*\Z", "\n", body)
+        out[m.group("path").strip()] = body.rstrip("\n")
+    return out
 
 
 def _run(cmd: list[str], cwd: Path) -> bool:
