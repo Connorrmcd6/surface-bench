@@ -42,15 +42,19 @@ loss. Where the code was *visible*, rot did not break correctness but imposed a 
 The confirmatory study extends this to a **multi-turn agentic** setting (5 models, 3 providers; 3,250
 graded completions, 0 errors) in which the agent has read-only tools (`read_file`, `grep`,
 `list_dir`) and may *choose* to verify the hidden dependency — removing the "follow the only available
-source" tautology. The headline holds: a confident stale doc **suppresses verification** on every
-model (the agent verifies ~100% with no doc, far less with a stale one), and all six pre-registered
-hypotheses are supported — the accuracy/recovery effects (H1, H2, H3, H6) confirmed on all five models
-under Holm correction, with a stale doc driving the *misled* rate to 68–100% even on the most capable
-models. The agentic data further exposes **three distinct provider-specific failure modes**: gpt-5.4
-stops verifying entirely under a stale doc ("blind obedience"); Claude models suppress verification
-but those who verify recover; and gemini keeps verifying yet still defers to the stale prose it just
-contradicted ("verify-then-defer"). Capability does not buy resistance — the strongest models are
-among the worst affected.
+source" tautology. The headline holds: with a stale doc in context the agent stops checking the hidden dependency
+(it verifies ~100% of the time with no doc, far less with a doc) — though, tellingly, a *fresh*
+doc suppresses verification just as much, so the operative mechanism is that **any authoritative
+doc, not staleness per se, stops the agent checking** (the harm of a stale doc is that the thing it
+stopped checking was false). All six pre-registered hypotheses are supported — the accuracy/recovery
+effects (H1, H2, H3) confirmed on all five models under Holm correction and under a stricter
+scenario-clustered bootstrap (§6.5), with a stale doc driving the *misled* rate to 68–100% even on
+the most capable models. The agentic data further exposes **three distinct failure modes among the
+five models** (we test one model per non-Anthropic provider, so these are model- not provider-level
+claims): gpt-5.4 stops verifying entirely under a stale doc ("blind obedience"); Claude models
+suppress verification but those who verify recover; and gemini-3.5-flash keeps verifying yet still defers to
+the stale prose it just contradicted ("verify-then-defer"). Capability does not buy resistance — the
+strongest models are among the worst affected.
 
 ---
 
@@ -256,7 +260,7 @@ entirely in C0); for C3, an `## Automated documentation check` section carrying 
 `surf check --format json` output; and a `## Task` section stating the goal and the exact output
 contract.
 
-**Neutrality is enforced** (a lesson from a pilot failure, issue #113): the stale value appears *only*
+**Neutrality is enforced** (a lesson from an early pilot failure): the stale value appears *only*
 in the stale hub — never in `task.md`, never in the visible code, and never as a "the doc may be wrong"
 hint. A leak re-introduces exactly the doc-trust bias the neutral system prompt is designed to remove.
 
@@ -289,7 +293,7 @@ Metrics per cell:
 ### 3.7 Models, scale, and sampling
 
 - **Models (5, across 3 providers).** Anthropic — `haiku` (`claude-haiku-4-5-20251001`), `sonnet`
-  (`claude-sonnet-4-6`), `opus` (`claude-opus-4-8`); OpenAI — `gpt`; Google — `gemini`. Exact model
+  (`claude-sonnet-4-6`), `opus` (`claude-opus-4-8`); OpenAI — `gpt` (`gpt-5.4`); Google — `gemini` (`gemini-3.5-flash`). Exact model
   ids and prices are pinned in `config.toml` at freeze time and copied into `run.json`.
 - **Trials (tiered).** N = 10 per cell for the **cascade** family (the headline); N = 5 for the
   **comprehension** family (success-ceilinged — kept only for the token story). Comprehension may be
@@ -340,7 +344,11 @@ token-cost deltas) is **exploratory** and reported as such.
 
 - **Rates** are reported with 95% **Wilson** confidence intervals.
 - **Each hypothesis** is tested as an unpaired difference of proportions with a 95% **bootstrap**
-  confidence interval *and* a bootstrap two-sided p-value (10,000 resamples, fixed seed).
+  confidence interval *and* a bootstrap two-sided p-value (10,000 resamples, fixed seed). *These
+  pre-registered interval methods treat the N completions per cell as independent Bernoulli trials.
+  Because completions cluster within scenarios (and the scenario set is small), §6.5 adds a post-hoc,
+  exploratory **scenario-clustered bootstrap** — resampling whole scenarios rather than completions —
+  as a robustness check on every confirmatory delta; it was not part of the frozen plan.*
 - **Multiplicity** is controlled with **Holm–Bonferroni** across the family of confirmatory
   success-delta tests (every model × pre-registered pair). A hypothesis is **confirmed** if its CI
   excludes 0 **and** it survives Holm; it is reported as **suggestive** if CI-significant but not
@@ -490,9 +498,26 @@ among C1 verifiers (H5's validity check).
 **H4 (verification suppression, C0 − C1) is significant on every model** but spans an order of
 magnitude: gpt **+96 pp** [+92, +99], sonnet +80 pp [+73, +86], haiku +77 pp [+69, +84], opus
 +67 pp [+58, +75], gemini **+15 pp** [+9, +22]. With **no** doc, all five models verify ~100% of the
-time; a stale doc is what stops them.
+time; a doc is what stops them.
 
-**This exposes three distinct failure mechanisms** — the study's most important new result:
+**It is the doc, not its staleness, that suppresses verification (exploratory).** H4 contrasts a
+*stale* doc against no doc, but the suppression is not specific to staleness: a *fresh* doc (C2)
+suppresses verification essentially as much. The C0 − C2 drop is +75 pp (haiku), **+82 pp (sonnet,
+i.e. a fresh doc suppresses *more* than the stale one)**, +62 pp (opus), +94 pp (gpt), and +26 pp
+(gemini) — within a few points of each model's C0 − C1. The mechanism is therefore that *any*
+authoritative doc in context makes the agent stop opening the dependency it would otherwise read; a
+stale doc is harmful not because it suppresses checking *more* but because the claim it suppresses
+checking *against* is false. This both sharpens the practical case for accuracy (the agent will trust
+whatever doc you give it, so it had better be right) and means H4's pre-registered "stale-specific"
+framing is, mechanistically, too narrow.
+
+**This exposes three distinct failure mechanisms** — the study's most important new result. *Two
+caveats on scope: (i) we test one model per non-Anthropic provider, so "blind obedience" and
+"verify-then-defer" are properties of gpt-5.4 and gemini-3.5-flash specifically, not established
+provider-level traits; and (ii) inference-time compute is not held constant across vendors (§6.1) —
+gpt-5.4 reasons within its completion budget while Claude and gemini do not — so gpt's total
+verification shutoff is partly confounded with its reasoning configuration and should be read as a
+model-plus-config behaviour, not a pure "OpenAI" effect.*
 
 - **gpt — blind obedience.** A stale doc shuts off verification *entirely* (0%); gpt commits to the
   wrong answer without ever opening the file it could have read in C0 96% of the time.
@@ -517,10 +542,19 @@ Success among C1 trials that verified the hidden dependency vs those that did no
 | gemini | 20% (n=110) | 0% (n=20) |
 | gpt    | — (n=0) | 0% (n=130) |
 
-For the three Claude models the split is large and in the predicted direction: verification mediates
-the harm. For **gpt** the mediation is *untestable* — there are zero C1 verifiers, the limiting case
-of suppression. For **gemini** the direction holds (20% > 0%) but the effect is weak: verifying
-barely helps because gemini defers to the doc anyway (see §6.3).
+For the three Claude models the split is large and in the predicted direction. For **gpt** the split
+is *untestable* — there are zero C1 verifiers, the limiting case of suppression. For **gemini** the
+direction holds (20% > 0%) but the effect is weak: verifying barely helps because gemini defers to
+the doc anyway (see §6.3).
+
+**This is an association, not a demonstrated causal mediation.** Whether a trial verifies is the
+agent's *own* choice under temperature sampling, not a randomized assignment, so verifiers and
+non-verifiers may differ on unobserved draws (a more cautious sampling path can produce both the
+decision to read *and* the correct answer). The split is therefore consistent with verification
+*causing* the rescue, but also with selection; we report it as the pre-registered within-C1
+contrast and decline the causal verb. A clean causal test would have to *induce* verification (e.g.
+force a read) rather than observe it, which the read-only design does not do — flagged as future
+work.
 
 ### 6.5 Confirmatory decisions
 
@@ -531,12 +565,28 @@ barely helps because gemini defers to the doc anyway (see §6.3).
 | **H3** | success(C3) ≈ C2, ≫ C1 | C3 − C1 = +54 to +69 pp, every model Holm ✓. The "≫ C1" recovery is confirmed everywhere; full parity with C2 holds for **opus** (98% vs 95%) and approaches it for sonnet (88% vs 100%), but C3 only partially recovers haiku (72%) and gemini (77%) and recovers gpt weakly (54% vs 100%) | **Confirmed on recovery (all 5); full C2-parity only for opus** |
 | **H4** | verification_rate(C1) < (C0) | Significant on all 5; +15 pp (gemini) to +96 pp (gpt) | **Confirmed (all 5)** |
 | **H5** | within C1, success(verified) > (not) | Supported for opus/sonnet/haiku; degenerate for gpt (no verifiers); weak for gemini (20% vs 0%) | **Confirmed for Claude; untestable (gpt) / weak (gemini)** |
-| **H6** | success(C3) > success(Cw) | +20 to +45 pp; every model Holm ✓ (opus +20 [+12,+28], gemini +32 [+20,+43], haiku +41 [+29,+52], sonnet +42 [+32,+52], gpt +45 [+35,+55]) | **Confirmed (all 5)** |
+| **H6** | success(C3) > success(Cw) | +20 to +45 pp; every model Holm ✓ (opus +20 [+12,+28], gemini +32 [+20,+43], haiku +41 [+29,+52], sonnet +42 [+32,+52], gpt +45 [+35,+55]). Under the stricter scenario-clustered bootstrap the recovery still excludes 0 on all five, but **opus narrows to [+1.5, +42] and gemini/sonnet widen to [+7.7, +58] / [+8.5, +72]** | **Confirmed (all 5); opus suggestive under clustering** |
 
 H6 is decisive: handing the agent Surface's *corrected code* (C3) beats a content-free "may be
 outdated" warning (Cw) on every model. The recovery is the **fix**, not mere suspicion — though the
 warning alone is not worthless (Cw − C1 is positive and Holm-significant on every model, +8 to
 +46 pp, largest for opus), so suspicion helps a little and the correction helps a lot more.
+
+**Robustness checks (post-hoc, exploratory; `tools/reanalysis_robustness.py`, artifact
+`robustness.md`).** Two analyses test whether the decisions above are artifacts of how the data are
+pooled or of the flagged cells:
+
+- *Scenario-clustered bootstrap.* Resampling whole scenarios (the cluster unit) rather than the 130
+  completions widens every interval ~2.5×, as expected when scenario variance is no longer ignored.
+  **The core accuracy/recovery effects survive comfortably** — H1 (C2 − C1) and H3 (C3 − C1) exclude
+  0 on all five models (e.g. opus H1 +64 [+42, +85], gpt H3 +54 [+27, +78]). The *marginal* claims
+  are the ones that soften: H6 for opus drops to [+1.5, +42] (now suggestive, not decisive), and the
+  "accurate prose beats no doc" contrast (C2 − C0, §6.6) ceases to exclude 0 for every model except
+  haiku. We therefore down-weight those two specific claims and leave the headlines as confirmed.
+- *Leave-them-out.* Dropping all nine oracle-flagged cells does not weaken any decision — every H1,
+  H3, and H6 delta gets *larger* (by +0 to +15 pp), because the flagged cells are precisely the ones
+  where the effect was absent (fresh-doc failures, or stale docs that never misled). Keeping them in
+  the family averages is the **conservative** choice, which is why §4.3's pre-stated rule keeps them.
 
 **Oracle flags (pre-stated, reported not dropped).** Nine of the 65 scenario×model cells tripped the
 oracle, in two categories, none of which overturns a family-level decision above:
@@ -557,11 +607,16 @@ oracle, in two categories, none of which overturns a family-level decision above
 The central pilot claim — **capability does not buy rot-resistance** — holds and strengthens across
 three providers. The most capable systems are not the most resistant: gpt-5.4 is the *worst* affected
 (C1 0% success, 100% misled, 0% verification), and opus, the strongest Claude, is still 68% misled
-under a stale doc. Resistance does not track a capability ranking; it tracks **provider-specific
-verification behaviour** (§6.3), which splits cleanly into the three mechanisms above. Note also that
+under a stale doc. Resistance does not track a capability ranking; it tracks **model-specific
+verification behaviour** (§6.3 — recall we test one model per non-Anthropic provider and do not hold
+reasoning compute fixed, so these are model-level, not provider-level, characterizations), which
+splits cleanly into the three mechanisms above. Note also that
 the marginal value of *accurate prose over no doc* (C2 − C0) is small but positive everywhere
-(+5 to +18 pp), Holm-significant for gpt/haiku/sonnet and not for gemini/opus — i.e. most of Surface's
-value is in *removing rot*, not in adding prose a capable agent could derive itself.
+(+5 to +18 pp), Holm-significant for gpt/haiku/sonnet under the pre-registered completion-level test —
+**but fragile: under the scenario-clustered bootstrap (§6.5) only haiku's C2 − C0 still excludes 0**
+(sonnet/opus/gpt/gemini all cross it). The honest reading is that most of Surface's value is in
+*removing rot*, not in adding prose a capable agent could otherwise derive — and the small "fresh
+prose vs nothing" edge should be treated as suggestive at best.
 
 ### 6.7 Cost and accuracy — fresh docs are the cheapest *and* most accurate (exploratory)
 
@@ -586,6 +641,14 @@ opus 7,803 → 3,562) as the file and the growing transcript re-enter context tu
 doc simply *states* the fact, so the agent skips the read-and-verify loop. The fresh doc's own input
 cost is small change against the reads it avoids. (Gemini is the exception — it reads the dependency
 regardless, so the doc is near-pure added input cost there, yet still buys +6 pp accuracy.)
+
+**This cost ranking is regime-specific, and points the same way as the accuracy one.** C0's *cost*
+penalty exists only because our multi-turn sandbox lets the agent reach and re-read the hidden file;
+in the realistic regime where that file is out of context (the §5 single-shot setting), C0 cannot
+pay the rediscovery tax — it is instead *cheap and wrong*, collapsing to the floor with stale docs.
+So "fresh docs are the cheapest correct option" holds where the code is reachable; where it is not,
+fresh docs win on *correctness* rather than cost. Either way the fresh-vs-everything-else ordering
+stands, but the specific cost-dominance numbers below should be read as the reachable-file case.
 
 So the practical takeaway answers the obvious "why bother with docs if no-docs works?": **no-docs is the
 most expensive way to be correct**, and only as accurate as it is *because the hidden code happened to
@@ -616,7 +679,8 @@ about a file it cannot see. **The confirmatory multi-turn run settles the obviou
 stronger agent that *can* verify will" — in the negative.** Capability does not buy resistance: gpt-5.4
 is the worst-affected model (C1 0% success, 100% misled, and it stops verifying *entirely*), and opus,
 the strongest Claude, is still 68% misled when it could have opened the file. Resistance tracks
-provider-specific verification behaviour (§6.3), not a capability ranking.
+model-specific verification behaviour (§6.3, with the one-model-per-provider and unequal-reasoning
+caveats noted there), not a capability ranking.
 
 ### 7.2 Two distinct costs of rot
 
@@ -636,15 +700,22 @@ In one line: **rot you can't see makes you wrong; rot you can see makes you slow
 
 The single-shot result is open to the objection that, with the dependency hidden, following the doc is
 the only available move. The multi-turn track answers this by giving the agent the *option* to verify,
-and the answer is decisive: **H4 holds on every model** — a confident stale doc lowers the
+and the answer is decisive: **H4 holds on every model** — a doc in context lowers the
 verification rate relative to no doc (the agent verifies ~100% in C0), so the harm is not about
-*availability* of information but about the doc *suppressing the agent's own checking*. The mechanism,
-however, is not uniform across providers, and the heterogeneity is the richest result of the study:
+*availability* of information but about the doc *suppressing the agent's own checking*. One
+sharpening the pre-registration did not anticipate (§6.3): the suppression is driven by the
+*presence* of an authoritative doc, not by its staleness — a **fresh** doc suppresses verification
+just as much (C0 − C2 ≈ C0 − C1 on four of five models, and *more* on sonnet). So the precise
+mechanism is "trust the doc, stop checking," and staleness only determines whether the un-checked
+claim was true. This makes accuracy, not mere presence, the load-bearing variable. The mechanism's
+*expression* is then not uniform across models, and the heterogeneity is the richest result of the
+study:
 
 - **Skipped verification (gpt, Claude).** For gpt the suppression is total (0% verify under C1) and
-  for the Claude models it is strong but partial; among the Claude minority who *do* verify, H5 holds
-  cleanly (opus: 95% of C1 verifiers are correct vs 0% of non-verifiers). Here verification is the
-  mediator exactly as pre-registered.
+  for the Claude models it is strong but partial; among the Claude minority who *do* verify, the
+  within-C1 split runs the predicted way (opus: 95% of C1 verifiers are correct vs 0% of
+  non-verifiers). We read this as verification *associating* with the rescue rather than a
+  demonstrated causal mediation (§6.4) — the choice to verify is the agent's own, not randomized.
 - **Discounted verification (gemini).** Gemini barely suppresses (still verifies 85% under C1) yet is
   77% misled, because reading the truth does not rescue it — only 20% of its verifiers answer
   correctly. The model opens the hidden file, sees code that contradicts the doc, and trusts the doc
@@ -663,6 +734,17 @@ Holm-significant everywhere, +8 to +46 pp, largest on opus), so suspicion buys a
 corrected code buys a much larger one. The practical reading: telling an agent "this might be wrong" is
 better than nothing, but telling it *what is actually true* is what restores correctness — and only a
 deterministic drift gate like Surface can supply the latter.
+
+**The more striking reading runs the other way: even handed the correction, some models still
+defer to the stale prose beside it.** Because C3 appends `surf`'s `new_code` — literally the corrected
+line — full recovery would be the expected, almost trivial outcome; the interesting result is where it
+*doesn't* happen. C3 recovers opus to 98% and sonnet to 88%, but only haiku to 72%, gemini to 77%, and
+gpt to **54%** — i.e. nearly half of gpt's C3 trials read the corrected code and *still* produced the
+stale answer (46% misled in C3). The corrected code sitting in context is not self-executing: a model
+that over-weights confident prose can look straight at the fix and discount it, the same
+"looked-and-deferred" failure gemini shows under plain verification (§6.3). This bounds the claim — a
+drift report helps decisively, but it is not a guarantee for every model, and the residual gap is
+itself a measure of how strongly a model privileges authoritative-sounding documentation over code.
 
 ### 7.5 Cost impact for decision-makers
 
@@ -729,7 +811,7 @@ can trust it.
   declared precedence (§3.5).
 - **Value leakage.** If the stale or fresh value appears in the task text, a worked example, or the
   visible code, the manipulation is contaminated. *Mitigation:* the stale value appears only in the
-  stale hub; `task.md` is neutral. This bit the first pilot (issue #113) and is now an authoring rule
+  stale hub; `task.md` is neutral. This bit the first pilot and is now an authoring rule
   with a checklist.
 - **Non-load-bearing drift.** A drift where T0 and T1 produce the same output measures nothing.
   *Mitigation:* authors must name an input where T0 and T1 differ; the oracle flags any cascade C1
@@ -744,11 +826,40 @@ can trust it.
   verdicts use two fields to cut a 50/50 guess.
 - **Infrastructure failures.** *Mitigation:* per-request timeout + bounded retries; errored cells
   excluded and counted, not scored as failures.
+- **Output-token truncation interacting with condition.** A 1,024-token budget could, in principle,
+  truncate a verifying agent mid-trial and grade it as wrong, biasing against exactly the
+  deliberation-heavy no-doc condition. *Checked, post-hoc:* turns hitting the ceiling are < 7% in
+  every cell and are **not** condition-skewed toward C0; `forced_answer` (max-turns exhausted) is ~0
+  (2 of 3,250 rows). Truncation is not a material confound. (Incidental: sonnet returns its verdict as
+  free text rather than via the `final_answer` tool in 93–99% of trials; this is parsed identically by
+  the grader and is condition-independent, so it does not bias rates.)
+- **Verification measured as an *act*, not comprehension.** `verified_hidden` fires when the agent
+  reads/greps a path matching the `hidden_paths` glob before answering — it certifies that the agent
+  *opened* the dependency, not that the contradicting line entered its attention. The raw log stores
+  the tool call and its args but not the returned text, so for gemini's "verify-then-defer" we can
+  confirm it queried the right file but cannot fully prove the divergent operator was in every
+  returned snippet; "looked and deferred" should be read with that caveat.
+- **Statistical independence of completions.** The pre-registered Wilson/bootstrap intervals treat
+  the N completions per cell as independent, but they cluster within a small scenario set.
+  *Mitigation/disclosure:* §6.5 adds a post-hoc scenario-clustered bootstrap; the H1/H2/H3 headlines
+  survive it, while two marginal claims (H6 on opus, C2 − C0) are down-weighted to suggestive
+  accordingly.
 
 ### 8.2 External validity (disclosed limitations)
 
 - **Curated fixtures, not real repositories.** All scenarios are bespoke; external validity is
   limited. A real-OSS case study is deferred future work.
+- **Drift class is exactly the class Surface detects.** Every scenario's drift is a flipped operator,
+  changed constant, inverted condition, or dropped guard — anchorable, single-line divergences of the
+  kind `surf check` is built to catch. This is deliberate construct alignment, but it means the
+  conclusions generalize to *detectable, anchorable* drift, not to semantic drift that is wrong in
+  spirit without any one liftable token. Combined with the declared competing interest (§9), the
+  benchmark should be read as measuring documentation rot **of the form the tool addresses**, not doc
+  rot in full generality.
+- **One model per non-Anthropic provider.** Three Claude models but a single OpenAI and single Google
+  model, and inference-time reasoning compute is not held constant across vendors (§6.1). The
+  per-provider "failure mode" labels (§6.3) are therefore model-level characterizations; calling them
+  provider traits would need ≥ 2 models per provider under matched reasoning budgets.
 - **Read-only agent loop.** No edit/run/test "thrash"; the compounding cost of rot is not measured.
 - **Language coverage.** Python and TypeScript only.
 - **Single-anchor scenarios.** The sealing tool currently seals only the first anchor per hub, so no
@@ -816,9 +927,17 @@ can trust it.
   uv run python -m surface_bench.report results/confirmatory
   uv run python -m surface_bench.oracle results/confirmatory
   ```
+- **Post-hoc robustness reanalysis** (the scenario-clustered bootstrap, the C0 − C2 verification
+  contrast, the leave-them-out check, and the truncation audit of §6.3/§6.5/§8). These are exploratory
+  additions, not part of the frozen plan, and run offline against the committed snapshot with a fixed
+  seed:
+  ```sh
+  uv run python tools/reanalysis_robustness.py results/confirmatory-20260616T172420Z
+  # writes results/confirmatory-20260616T172420Z/robustness.md
+  ```
 - **Artifacts.** Harness, scenarios, graders, reference solutions, the pre-registration, the ABC
-  self-audit, and both the committed pilot and confirmatory snapshots are all in the `surface-bench`
-  repository.
+  self-audit, the robustness reanalysis (`tools/reanalysis_robustness.py` + `robustness.md`), and both
+  the committed pilot and confirmatory snapshots are all in the `surface-bench` repository.
 
 ---
 
@@ -831,10 +950,11 @@ is no longer true. Our single-shot pilot shows this failure is total and capabil
 model wrong on every hidden-dependency task under a stale doc — and that accurate docs, or simply
 surfacing the drift, restore correctness. The confirmatory multi-turn study answers the deeper
 question: even when verification is *freely available*, a confident stale doc still misleads — driving
-the misled rate to 68–100% on all five models across three providers — because the doc **suppresses the
-agent's own verification** (H4 confirmed everywhere) or, in gemini's case, because the agent verifies
-and **defers to the doc anyway**. Capability does not rescue this: the strongest models are among the
-worst affected. The remedy that works is not a better model and not a generic warning, but the
+the misled rate to 68–100% on all five models across three providers — because **an authoritative doc
+in context suppresses the agent's own verification** (H4 confirmed everywhere; and, tellingly, a
+*fresh* doc suppresses it just as much, so the operative variable is the doc's authority, not its
+staleness — §6.3) or, in gemini's case, because the agent verifies and **defers to the doc anyway**.
+Capability does not rescue this: the strongest models are among the worst affected. The remedy that works is not a better model and not a generic warning, but the
 *corrected code* a deterministic drift gate supplies — handing the agent Surface's report beats a bare
 "may be outdated" warning on every model (H6 confirmed). For agents acting on documentation they cannot
 independently weigh, keeping docs honest — or surfacing exactly where they have rotted — is a
